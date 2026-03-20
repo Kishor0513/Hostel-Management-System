@@ -1,0 +1,312 @@
+// Hostel Management System Prisma schema
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  STUDENT
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         UserRole  @default(STUDENT)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student      Student?
+  staff        Staff?
+
+  createdMaintenanceRequests MaintenanceRequest[] @relation("MaintenanceCreatedBy")
+  assignedMaintenanceRequests MaintenanceRequest[] @relation("MaintenanceAssignedTo")
+
+  createdComplaintTickets    ComplaintTicket[]    @relation("ComplaintCreatedBy")
+  assignedComplaintTickets   ComplaintTicket[]    @relation("ComplaintAssignedTo")
+
+  announcementCreatedBy      Announcement[]       @relation("AnnouncementCreatedBy")
+
+  maintenanceLogsCreatedBy   MaintenanceLog[]     @relation("MaintenanceLogChangedBy")
+  complaintLogsCreatedBy     ComplaintLog[]       @relation("ComplaintLogChangedBy")
+}
+
+model Student {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+
+  studentNumber String   @unique
+  program        String?
+  admissionDate  DateTime?
+
+  allocations    Allocation[]
+  invoices       Invoice[]
+  attendance     AttendanceRecord[]
+
+  createdMaintenanceRequests MaintenanceRequest[] @relation("MaintenanceStudent")
+  createdComplaintTickets    ComplaintTicket[]    @relation("ComplaintStudent")
+
+  @@index([studentNumber])
+}
+
+model Staff {
+  id           String @id @default(cuid())
+  userId       String @unique
+  user         User   @relation(fields: [userId], references: [id])
+
+  staffCode    String @unique
+  designation  String?
+  department   String?
+
+  assignedMaintenanceRequests MaintenanceRequest[] @relation("MaintenanceStaffAssigned")
+  assignedComplaintTickets    ComplaintTicket[]    @relation("ComplaintStaffAssigned")
+}
+
+model Room {
+  id           String @id @default(cuid())
+  building     String
+  floor        Int
+  roomNumber   String
+  capacityBeds Int
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  beds         Bed[]
+
+  maintenanceRequests MaintenanceRequest[]
+  complaintTickets    ComplaintTicket[]
+
+  @@unique([building, floor, roomNumber])
+  @@index([building, floor])
+}
+
+model Bed {
+  id         String @id @default(cuid())
+  roomId     String
+  bedNumber  Int
+
+  room        Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  allocations Allocation[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([roomId, bedNumber])
+  @@index([roomId, bedNumber])
+}
+
+model Allocation {
+  id             String @id @default(cuid())
+  bedId          String
+  studentId      String
+
+  startDate     DateTime
+  endDate       DateTime?
+  transferReason String?
+
+  createdAt     DateTime @default(now())
+
+  bed          Bed     @relation(fields: [bedId], references: [id], onDelete: Cascade)
+  student      Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([bedId, endDate])
+  @@index([studentId, endDate])
+}
+
+model Invoice {
+  id          String @id @default(cuid())
+  studentId   String
+
+  periodStart DateTime
+  periodEnd   DateTime
+  dueDate     DateTime
+
+  amountDue   Decimal  @db.Decimal(10, 2)
+  status      InvoiceStatus @default(PENDING)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments    Payment[]
+
+  @@index([studentId, createdAt])
+  @@index([dueDate, status])
+}
+
+model Payment {
+  id           String @id @default(cuid())
+  invoiceId   String
+
+  amountPaid  Decimal  @db.Decimal(10, 2)
+  paymentDate DateTime @default(now())
+
+  method       String
+  reference    String?
+
+  invoice      Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, paymentDate])
+}
+
+model AttendanceRecord {
+  id         String @id @default(cuid())
+  studentId  String
+
+  date       DateTime @db.Date
+  status     AttendanceStatus
+  note        String?
+
+  createdAt  DateTime @default(now())
+
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@index([date])
+}
+
+model MaintenanceRequest {
+  id          String @id @default(cuid())
+
+  title       String
+  description String
+
+  status      MaintenanceStatus @default(OPEN)
+  priority    Int @default(2)
+
+  roomId      String?
+  room        Room? @relation(fields: [roomId], references: [id])
+
+  studentId   String?
+  student     Student? @relation("MaintenanceStudent", fields: [studentId], references: [id])
+
+  createdByUserId String
+  createdByUser   User @relation("MaintenanceCreatedBy", fields: [createdByUserId], references: [id])
+
+  assignedToUserId String?
+  assignedToUser   User? @relation("MaintenanceAssignedTo", fields: [assignedToUserId], references: [id])
+
+  assignedToStaffId String?
+  assignedToStaff   Staff? @relation("MaintenanceStaffAssigned", fields: [assignedToStaffId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logs         MaintenanceLog[]
+
+  @@index([status, createdAt])
+}
+
+model MaintenanceLog {
+  id            String @id @default(cuid())
+  requestId     String
+  status        MaintenanceStatus
+  comment       String?
+
+  changedByUserId String
+  changedByUser   User @relation("MaintenanceLogChangedBy", fields: [changedByUserId], references: [id])
+
+  changedAt     DateTime @default(now())
+
+  request       MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, changedAt])
+}
+
+model ComplaintTicket {
+  id          String @id @default(cuid())
+
+  subject     String
+  description String
+
+  status      ComplaintStatus @default(OPEN)
+  priority    Int @default(2)
+
+  roomId      String?
+  room        Room? @relation(fields: [roomId], references: [id])
+
+  studentId   String?
+  student     Student? @relation("ComplaintStudent", fields: [studentId], references: [id])
+
+  createdByUserId String
+  createdByUser   User @relation("ComplaintCreatedBy", fields: [createdByUserId], references: [id])
+
+  assignedToUserId String?
+  assignedToUser   User? @relation("ComplaintAssignedTo", fields: [assignedToUserId], references: [id])
+
+  assignedToStaffId String?
+  assignedToStaff   Staff? @relation("ComplaintStaffAssigned", fields: [assignedToStaffId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logs         ComplaintLog[]
+
+  @@index([status, createdAt])
+}
+
+model ComplaintLog {
+  id            String @id @default(cuid())
+  ticketId     String
+  status        ComplaintStatus
+  comment       String?
+
+  changedByUserId String
+  changedByUser   User @relation("ComplaintLogChangedBy", fields: [changedByUserId], references: [id])
+
+  changedAt     DateTime @default(now())
+
+  ticket       ComplaintTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, changedAt])
+}
+
+model Announcement {
+  id        String @id @default(cuid())
+  title     String
+  content   String
+
+  isPublished Boolean @default(false)
+  publishedAt DateTime?
+
+  createdByUserId String
+  createdByUser   User @relation("AnnouncementCreatedBy", fields: [createdByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
