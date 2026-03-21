@@ -1,14 +1,21 @@
+import 'dotenv/config';
 import { hash } from "bcryptjs";
+import { PrismaClient } from "../src/generated/prisma/client.ts";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { AttendanceStatus, ComplaintStatus, MaintenanceStatus, UserRole } from "../src/generated/prisma/enums.ts";
 
-import { prisma } from "../src/lib/prisma";
-import { AttendanceStatus, ComplaintStatus, MaintenanceStatus, UserRole } from "../src/generated/prisma/enums";
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({
+    connectionString: process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/hms",
+  }),
+});
 
 async function main() {
   const adminPasswordHash = await hash("admin123", 10);
   const staffPasswordHash = await hash("staff123", 10);
   const studentPasswordHash = await hash("student123", 10);
 
-  // Clear existing data (useful for local development / demo).
+  console.log("Cleaning up database...");
   await prisma.$transaction(async (tx) => {
     await tx.maintenanceLog.deleteMany();
     await tx.complaintLog.deleteMany();
@@ -25,24 +32,25 @@ async function main() {
     await tx.user.deleteMany();
   });
 
+  console.log("Creating admin and staff...");
   const admin = await prisma.user.create({
     data: {
       email: "admin@hostel.local",
-      name: "Admin",
+      name: "System Admin",
       passwordHash: adminPasswordHash,
       role: UserRole.ADMIN,
     },
   });
 
-  const staff = await prisma.staff.create({
+  const warden = await prisma.staff.create({
     data: {
       staffCode: "STF-001",
-      designation: "Warden",
-      department: "Hostel Ops",
+      designation: "Chief Warden",
+      department: "Hostel Management",
       user: {
         create: {
-          email: "staff@hostel.local",
-          name: "Warden",
+          email: "warden@hostel.local",
+          name: "Mr. Ramesh Sharma",
           passwordHash: staffPasswordHash,
           role: UserRole.STAFF,
         },
@@ -51,15 +59,15 @@ async function main() {
     include: { user: true },
   });
 
-  const extraStaff = await prisma.staff.create({
+  const maintenanceStaff = await prisma.staff.create({
     data: {
       staffCode: "STF-002",
-      designation: "Helper",
+      designation: "Technician",
       department: "Maintenance",
       user: {
         create: {
-          email: "helper@hostel.local",
-          name: "Maintenance Helper",
+          email: "tech@hostel.local",
+          name: "John Miller",
           passwordHash: staffPasswordHash,
           role: UserRole.STAFF,
         },
@@ -68,44 +76,49 @@ async function main() {
     include: { user: true },
   });
 
-  const roomsToCreate = [
-    { building: "A", floor: 1, roomNumber: "101", capacityBeds: 4 },
-    { building: "A", floor: 1, roomNumber: "102", capacityBeds: 4 },
-    { building: "B", floor: 2, roomNumber: "201", capacityBeds: 6 },
-  ];
-  for (const r of roomsToCreate) {
-    const room = await prisma.room.create({
-      data: {
-        building: r.building,
-        floor: r.floor,
-        roomNumber: r.roomNumber,
-        capacityBeds: r.capacityBeds,
-      },
-    });
-    await prisma.bed.createMany({
-      data: Array.from({ length: r.capacityBeds }, (_, i) => ({
-        roomId: room.id,
-        bedNumber: i + 1,
-      })),
-    });
+  console.log("Creating rooms and beds...");
+  const blocks = ["Alpha", "Beta", "Gamma"];
+  const allBeds = [];
+  for (const block of blocks) {
+    for (let floor = 1; floor <= 2; floor++) {
+      for (let rNum = 1; rNum <= 2; rNum++) {
+        const roomNumber = `${floor}0${rNum}`;
+        const capacity = floor === 1 ? 4 : 2;
+        const room = await prisma.room.create({
+          data: { building: block, floor, roomNumber, capacityBeds: capacity },
+        });
+        for (let b = 1; b <= capacity; b++) {
+          const bed = await prisma.bed.create({
+            data: { roomId: room.id, bedNumber: b },
+          });
+          allBeds.push(bed);
+        }
+      }
+    }
   }
 
-  const allBeds = await prisma.bed.findMany({
-    orderBy: [{ room: { building: "asc" } }, { room: { floor: "asc" } }, { bedNumber: "asc" }],
-    include: { room: true },
-  });
-
-  const studentUsers = [
-    { email: "s1@hostel.local", name: "Student One", studentNumber: "S-1001", program: "B.Tech" },
-    { email: "s2@hostel.local", name: "Student Two", studentNumber: "S-1002", program: "B.Tech" },
-    { email: "s3@hostel.local", name: "Student Three", studentNumber: "S-1003", program: "BCA" },
-    { email: "s4@hostel.local", name: "Student Four", studentNumber: "S-1004", program: "BCA" },
-    { email: "s5@hostel.local", name: "Student Five", studentNumber: "S-1005", program: "MCA" },
-    { email: "s6@hostel.local", name: "Student Six", studentNumber: "S-1006", program: "B.Sc" },
+  console.log("Creating 12 students with realistic data...");
+  const studentsRaw = [
+    { name: "Suman Kumar", email: "suman@student.local", sn: "S24001", prog: "B.Tech CS" },
+    { name: "Priya Raj", email: "priya@student.local", sn: "S24002", prog: "B.Tech IT" },
+    { name: "Amit Singh", email: "amit@student.local", sn: "S24003", prog: "BCA" },
+    { name: "Sneha Kapur", email: "sneha@student.local", sn: "S24004", prog: "B.Arch" },
+    { name: "Rohit Verma", email: "rohit@student.local", sn: "S24005", prog: "BBA" },
+    { name: "Ananya Das", email: "ananya@student.local", sn: "S24006", prog: "B.Tech EC" },
+    { name: "Vikram Rathore", email: "vikram@student.local", sn: "S24007", prog: "B.Tech CS" },
+    { name: "Ishaan Mehta", email: "ishaan@student.local", sn: "S24008", prog: "MCA" },
+    { name: "Kavya Iyer", email: "kavya@student.local", sn: "S24009", prog: "MBA" },
+    { name: "Rahul Dravid", email: "rahul@student.local", sn: "S24010", prog: "B.Tech ME" },
+    { name: "Sara Ali", email: "sara@student.local", sn: "S24011", prog: "B.Tech CS" },
+    { name: "Arjun Reddy", email: "arjun@student.local", sn: "S24012", prog: "B.Sc Physics" },
   ];
 
   const students = [];
-  for (const s of studentUsers) {
+  const now = new Date();
+  const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+  for (let i = 0; i < studentsRaw.length; i++) {
+    const s = studentsRaw[i];
     const user = await prisma.user.create({
       data: {
         email: s.email,
@@ -113,299 +126,136 @@ async function main() {
         passwordHash: studentPasswordHash,
         role: UserRole.STUDENT,
       },
-      select: { id: true },
     });
-
     const student = await prisma.student.create({
       data: {
         userId: user.id,
-        studentNumber: s.studentNumber,
-        program: s.program,
-        admissionDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000),
+        studentNumber: s.sn,
+        program: s.prog,
+        admissionDate: new Date(ninetyDaysAgo.getTime() + i * 2 * 24 * 60 * 60 * 1000),
       },
     });
-
     students.push(student);
+
+    // Allocate beds to 10 students (out of 12) to show room for more
+    if (i < 10) {
+      await prisma.allocation.create({
+        data: {
+          bedId: allBeds[i].id,
+          studentId: student.id,
+          startDate: student.admissionDate || now,
+          transferReason: "Initial allotment",
+        },
+      });
+    }
   }
 
-  const now = new Date();
-  const day = 24 * 60 * 60 * 1000;
+  console.log("Generating financial history...");
+  for (const st of students) {
+    for (let m = 0; m < 3; m++) {
+      const pStart = new Date(now);
+      pStart.setMonth(pStart.getMonth() - m - 1);
+      pStart.setDate(1);
+      const pEnd = new Date(pStart);
+      pEnd.setMonth(pEnd.getMonth() + 1);
+      pEnd.setDate(0);
 
-  // Create active allocations + a transfer history.
-  // Beds 0..3 are occupied, bed 0 has a transfer in the past.
-  await prisma.allocation.createMany({
-    data: [
-      {
-        bedId: allBeds[0].id,
-        studentId: students[0].id,
-        startDate: new Date(now.getTime() - 40 * day),
-        endDate: new Date(now.getTime() - 10 * day),
-        transferReason: "Initial allotment",
-      },
-      {
-        bedId: allBeds[0].id,
-        studentId: students[3].id,
-        startDate: new Date(now.getTime() - 10 * day),
-        endDate: null,
-        transferReason: "Transfer (better fit)",
-      },
-      {
-        bedId: allBeds[1].id,
-        studentId: students[1].id,
-        startDate: new Date(now.getTime() - 25 * day),
-        endDate: null,
-        transferReason: "Allotment",
-      },
-      {
-        bedId: allBeds[2].id,
-        studentId: students[2].id,
-        startDate: new Date(now.getTime() - 20 * day),
-        endDate: null,
-        transferReason: "Allotment",
-      },
-      {
-        bedId: allBeds[3].id,
-        studentId: students[4].id,
-        startDate: new Date(now.getTime() - 15 * day),
-        endDate: null,
-        transferReason: "Allotment",
-      },
-    ],
-  });
+      const amount = 4500 + (st.studentNumber.charCodeAt(5) % 10) * 150;
+      const status = m === 0 ? "PENDING" : "PAID";
 
-  // Note: createMany doesn't accept null for optional fields cleanly in all cases; ensure correct insert with individual calls if needed.
-
-  // Create invoices and some payments for the last 3 months.
-  const invoices = [];
-  for (let m = 0; m < 3; m++) {
-    const periodStart = new Date(now);
-    periodStart.setMonth(periodStart.getMonth() - m);
-    const periodEnd = new Date(periodStart);
-    periodEnd.setMonth(periodEnd.getMonth() + 1);
-
-    for (const st of students) {
       const invoice = await prisma.invoice.create({
         data: {
           studentId: st.id,
-          periodStart,
-          periodEnd,
-          dueDate: new Date(periodEnd.getTime() + 10 * day),
-          amountDue: 2000 + Math.floor(Math.random() * 800),
-          status: "PENDING",
+          periodStart: pStart,
+          periodEnd: pEnd,
+          dueDate: new Date(pEnd.getTime() + 5 * 24 * 60 * 60 * 1000),
+          amountDue: amount,
+          status,
         },
       });
-      invoices.push(invoice);
-    }
-  }
 
-  // Record payments for a subset so charts look good.
-  for (let i = 0; i < invoices.length; i++) {
-    const inv = invoices[i];
-    const shouldPay = i % 2 === 0; // about half paid
-    if (!shouldPay) continue;
-
-    const paymentDate = new Date(inv.dueDate.getTime() - (Math.floor(Math.random() * 9) + 1) * day);
-    const invoiceAmount = Number(inv.amountDue);
-    const paymentAmount = Math.min(invoiceAmount, invoiceAmount * (0.7 + Math.random() * 0.3));
-
-    await prisma.payment.create({
-      data: {
-        invoiceId: inv.id,
-        amountPaid: paymentAmount,
-        paymentDate,
-        method: i % 3 === 0 ? "UPI" : i % 3 === 1 ? "Card" : "Cash",
-        reference: `PAY-${String(i).padStart(4, "0")}`,
-      },
-    });
-  }
-
-  // Attendance: last 30 days for first 4 students.
-  const attendanceStudents = students.slice(0, 4);
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * day);
-    for (const st of attendanceStudents) {
-      const status = (i + st.studentNumber.length) % 5 === 0 ? "ABSENT" : "PRESENT";
-      await prisma.attendanceRecord.upsert({
-        where: {
-          studentId_date: {
-            studentId: st.id,
-            date: new Date(d.toISOString().slice(0, 10)),
+      if (status === "PAID") {
+        await prisma.payment.create({
+          data: {
+            invoiceId: invoice.id,
+            amountPaid: amount,
+            paymentDate: new Date(invoice.dueDate.getTime() - 2 * 24 * 60 * 60 * 1000),
+            method: "Online Banking",
+            reference: `TXN-${Math.random().toString(36).toUpperCase().slice(2, 10)}`,
           },
-        },
-        update: { status: status as AttendanceStatus, note: null },
-        create: { studentId: st.id, date: new Date(d.toISOString().slice(0, 10)), status: status as AttendanceStatus, note: null },
+        });
+      } else if (Math.random() > 0.4) {
+        // Some students have partial payments
+        await prisma.payment.create({
+          data: {
+            invoiceId: invoice.id,
+            amountPaid: amount * 0.4,
+            paymentDate: now,
+            method: "UPI",
+            reference: `TXN-P-${Math.random().toString(36).toUpperCase().slice(2, 6)}`,
+          },
+        });
+      }
+    }
+  }
+
+  console.log("Generating attendance data...");
+  for (let d = 0; d < 30; d++) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - d);
+    const dayStr = date.toISOString().slice(0, 10);
+
+    for (const st of students) {
+      // 85% - 98% attendance
+      const isPresent = Math.random() > 0.1;
+      await prisma.attendanceRecord.upsert({
+        where: { studentId_date: { studentId: st.id, date: new Date(dayStr) } },
+        create: { studentId: st.id, date: new Date(dayStr), status: isPresent ? "PRESENT" : "ABSENT" },
+        update: { status: isPresent ? "PRESENT" : "ABSENT" },
       });
     }
   }
 
-  // Maintenance requests
-  const maintenanceOpen = await prisma.maintenanceRequest.create({
+  console.log("Generating tickets and logs...");
+  const mRequest = await prisma.maintenanceRequest.create({
     data: {
-      title: "Fan not working",
-      description: "The ceiling fan in the room is not spinning.",
+      title: "Clogged Drain in Alpha-101",
+      description: "Severe water clogging in the common bathroom of Alpha-101.",
       status: "OPEN",
-      priority: 2,
+      priority: 3,
+      roomId: (await prisma.room.findFirst({ where: { building: "Alpha", roomNumber: "101" } }))?.id,
       createdByUserId: admin.id,
-      studentId: students[1].id,
-      roomId: allBeds[1].roomId,
     },
   });
   await prisma.maintenanceLog.create({
-    data: {
-      requestId: maintenanceOpen.id,
-      status: "OPEN",
-      comment: "Created",
-      changedByUserId: admin.id,
-    },
+    data: { requestId: mRequest.id, status: "OPEN", comment: "Ticket opened via admin panel", changedByUserId: admin.id },
   });
 
-  const maintenanceInProgress = await prisma.maintenanceRequest.create({
+  const complaint = await prisma.complaintTicket.create({
     data: {
-      title: "Leakage issue",
-      description: "Water leakage under the sink.",
+      subject: "Poor Internet Connection",
+      description: "WiFi is almost unusable in Beta block 2nd floor during peaks.",
       status: "IN_PROGRESS",
-      priority: 3,
-      createdByUserId: admin.id,
-      studentId: students[2].id,
-      roomId: allBeds[2].roomId,
-      assignedToStaffId: extraStaff.id,
-      assignedToUserId: extraStaff.userId,
-    },
-  });
-  await prisma.maintenanceLog.createMany({
-    data: [
-      { requestId: maintenanceInProgress.id, status: "OPEN", comment: "Received", changedByUserId: admin.id },
-      { requestId: maintenanceInProgress.id, status: "IN_PROGRESS", comment: "Assigned to staff", changedByUserId: extraStaff.userId },
-    ],
-  });
-
-  const maintenanceDone = await prisma.maintenanceRequest.create({
-    data: {
-      title: "Door alignment",
-      description: "Door is not closing properly.",
-      status: "DONE",
-      priority: 1,
-      createdByUserId: admin.id,
-      studentId: students[0].id,
-      roomId: allBeds[0].roomId,
-      assignedToStaffId: staff.id,
-      assignedToUserId: staff.userId,
-    },
-  });
-  await prisma.maintenanceLog.createMany({
-    data: [
-      { requestId: maintenanceDone.id, status: "OPEN", comment: "Created", changedByUserId: admin.id },
-      { requestId: maintenanceDone.id, status: "DONE", comment: "Resolved", changedByUserId: staff.userId },
-    ],
-  });
-
-  // Complaint tickets
-  const complaintOpen = await prisma.complaintTicket.create({
-    data: {
-      subject: "Internet issue",
-      description: "WiFi signal is weak in the evening.",
-      status: "OPEN",
       priority: 2,
-      createdByUserId: admin.id,
-      studentId: students[3].id,
-      roomId: allBeds[0].roomId,
+      studentId: students[0].id,
+      createdByUserId: students[0].userId,
+      assignedToUserId: warden.userId,
+      assignedToStaffId: warden.id,
     },
   });
   await prisma.complaintLog.create({
-    data: {
-      ticketId: complaintOpen.id,
-      status: "OPEN",
-      comment: "Created",
-      changedByUserId: admin.id,
-    },
+    data: { ticketId: complaint.id, status: "IN_PROGRESS", comment: "Warden is looking into ISP settings", changedByUserId: warden.userId },
   });
 
-  const complaintInProgress = await prisma.complaintTicket.create({
-    data: {
-      subject: "Power cuts",
-      description: "Frequent power cuts on some days.",
-      status: "IN_PROGRESS",
-      priority: 3,
-      createdByUserId: admin.id,
-      studentId: students[4].id,
-      roomId: allBeds[3].roomId,
-      assignedToStaffId: staff.id,
-      assignedToUserId: staff.userId,
-    },
-  });
-  await prisma.complaintLog.createMany({
-    data: [
-      { ticketId: complaintInProgress.id, status: "OPEN", comment: "Received", changedByUserId: admin.id },
-      { ticketId: complaintInProgress.id, status: "IN_PROGRESS", comment: "Assigned", changedByUserId: staff.userId },
-    ],
-  });
-
-  const complaintResolved = await prisma.complaintTicket.create({
-    data: {
-      subject: "Mess quality",
-      description: "Meal quality has been inconsistent.",
-      status: "RESOLVED",
-      priority: 2,
-      createdByUserId: admin.id,
-      studentId: students[5].id,
-      roomId: allBeds[4].roomId,
-      assignedToStaffId: extraStaff.id,
-      assignedToUserId: extraStaff.userId,
-    },
-  });
-  await prisma.complaintLog.createMany({
-    data: [
-      { ticketId: complaintResolved.id, status: "OPEN", comment: "Created", changedByUserId: admin.id },
-      { ticketId: complaintResolved.id, status: "RESOLVED", comment: "Resolved with changes", changedByUserId: extraStaff.userId },
-    ],
-  });
-
-  // Announcements
-  await prisma.announcement.createMany({
-    data: [
-      {
-        title: "Hostel check-in begins",
-        content: "New admissions can check in from tomorrow 10:00 AM.",
-        isPublished: true,
-        publishedAt: new Date(now.getTime() - 2 * day),
-        createdByUserId: admin.id,
-      },
-      {
-        title: "Maintenance holiday notice",
-        content: "Some rooms will have temporary water supply interruption on Saturday.",
-        isPublished: true,
-        publishedAt: new Date(now.getTime() - 8 * day),
-        createdByUserId: admin.id,
-      },
-      {
-        title: "Draft notice",
-        content: "This announcement is not published yet.",
-        isPublished: false,
-        publishedAt: null,
-        createdByUserId: admin.id,
-      },
-    ],
-  });
-
-  // eslint-disable-next-line no-console
-  console.log("Seed completed. Demo credentials:");
-  // eslint-disable-next-line no-console
-  console.log("Admin: admin@hostel.local / admin123");
-  // eslint-disable-next-line no-console
-  console.log("Staff: staff@hostel.local / staff123");
-  // eslint-disable-next-line no-console
-  console.log("Student: s1@hostel.local / student123");
+  console.log("DUMMY DATA GENERATION SUCCESSFUL!");
+  console.log("Updated 12 students, financial records, and attendance.");
 }
 
 main()
-  .then(() => {
-    // eslint-disable-next-line no-process-exit
-    process.exit(0);
-  })
   .catch((e) => {
-    // eslint-disable-next-line no-console
     console.error(e);
-    // eslint-disable-next-line no-process-exit
     process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
   });
-
