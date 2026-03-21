@@ -1,19 +1,19 @@
 'use client';
 
 import {
+	Area,
+	AreaChart,
 	Bar,
 	BarChart,
 	CartesianGrid,
 	Cell,
 	Legend,
-	Line,
-	LineChart,
-	Pie,
-	PieChart,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
 	YAxis,
+	Pie,
+	PieChart
 } from 'recharts';
 
 import ChartCard from './ChartCard';
@@ -43,23 +43,27 @@ export default function DashboardCharts({
 	const COLORS = ['#34d399', '#fbbf24'];
 
 	return (
-		<div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			<ChartCard
-				title="Occupancy"
-				description="Active allocations vs free beds"
+				title="Occupancy Overview"
+				description="Ratio of occupied vs available beds"
 			>
-				<div className="h-36 w-full">
+				<div className="h-56 w-full">
 					<ResponsiveContainer
 						width="100%"
 						height="100%"
 					>
 						<PieChart>
-							<Tooltip />
+							<Tooltip 
+								contentStyle={{ borderRadius: '12px', background: '#0f172a', border: '1px solid #334155', color: '#f8fafc' }}
+							/>
 							<Pie
 								data={pieData}
 								dataKey="value"
-								innerRadius={52}
-								outerRadius={78}
+								innerRadius={65}
+								outerRadius={90}
+								paddingAngle={5}
+								stroke="none"
 							>
 								{pieData.map((_, idx) => (
 									<Cell
@@ -68,127 +72,159 @@ export default function DashboardCharts({
 									/>
 								))}
 							</Pie>
+							<Legend verticalAlign="bottom" height={36}/>
 						</PieChart>
 					</ResponsiveContainer>
 				</div>
 			</ChartCard>
 
 			<ChartCard
-				title="Payments Trend"
-				description="Total collected each month (last 6 months)"
+				title="Monthly Revenue"
+				description="Total payments collected (Last 6 Months)"
 			>
-				<div className="h-36 w-full">
+				<div className="h-56 w-full">
 					<ResponsiveContainer
 						width="100%"
 						height="100%"
 					>
-						<LineChart data={paymentsTrend}>
-							<CartesianGrid stroke="rgba(255,255,255,0.08)" />
+						<AreaChart data={paymentsTrend}>
+							<defs>
+								<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+									<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+									<stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+								</linearGradient>
+							</defs>
+							<CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
 							<XAxis
 								dataKey="label"
-								tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
+								tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
+								axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
 							/>
-							<YAxis tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }} />
+							<YAxis 
+								tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
+								axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+							/>
 							<Tooltip
 								contentStyle={{
-									background: 'rgba(5,5,5,0.9)',
-									border: '1px solid rgba(255,255,255,0.1)',
+									background: '#0f172a',
+									border: '1px solid #334155',
+									borderRadius: '8px',
+									color: '#f8fafc'
 								}}
-								formatter={(v: unknown) => [Number(v).toFixed(2), 'Collected']}
+								formatter={(v: unknown) => [`$${Number(v).toLocaleString()}`, 'Revenue']}
 							/>
-							<Legend />
-							<Line
+							<Area
 								type="monotone"
 								dataKey="value"
-								name="Collected"
-								stroke="#60a5fa"
+								stroke="#3b82f6"
 								strokeWidth={3}
-								dot={{ r: 3 }}
+								fillOpacity={1}
+								fill="url(#colorValue)"
 							/>
-						</LineChart>
+						</AreaChart>
 					</ResponsiveContainer>
 				</div>
 			</ChartCard>
 
 			<ChartCard
-				title="Attendance Rate"
-				description="Present rate per day (last 30 days)"
+				title="Attendance Trends"
+				description="Daily presence rate (Last 30 Days)"
 			>
-				<div className="h-36 w-full">
+				<div className="h-56 w-full">
 					<ResponsiveContainer
 						width="100%"
 						height="100%"
 					>
-						<LineChart data={attendanceTrend}>
-							<CartesianGrid stroke="rgba(255,255,255,0.08)" />
+						<AreaChart data={attendanceTrend}>
+							<defs>
+								<linearGradient id="colorAtt" x1="0" y1="0" x2="0" y2="1">
+									<stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+									<stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+								</linearGradient>
+							</defs>
+							<CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
 							<XAxis
 								dataKey="label"
-								tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
-								interval="preserveStartEnd"
+								tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+								axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+								interval={4}
 							/>
 							<YAxis
 								tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-								tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
+								tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
+								axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
 								domain={[0, 1]}
 							/>
 							<Tooltip
 								contentStyle={{
-									background: 'rgba(5,5,5,0.9)',
-									border: '1px solid rgba(255,255,255,0.1)',
+									background: '#0f172a',
+									border: '1px solid #334155',
+									borderRadius: '8px',
+									color: '#f8fafc'
 								}}
 								formatter={(v: unknown) => [
 									`${(Number(v) * 100).toFixed(1)}%`,
-									'Present rate',
+									'Attendance',
 								]}
 							/>
-							<Line
+							<Area
 								type="monotone"
 								dataKey="value"
-								name="Present rate"
-								stroke="#34d399"
+								stroke="#10b981"
 								strokeWidth={3}
-								dot={{ r: 3 }}
+								fillOpacity={1}
+								fill="url(#colorAtt)"
 							/>
-						</LineChart>
+						</AreaChart>
 					</ResponsiveContainer>
 				</div>
 			</ChartCard>
 
 			<ChartCard
-				title="Tickets by Status"
-				description="Maintenance vs Complaints (OPEN / IN_PROGRESS / CLOSED)"
+				title="Support Tickets"
+				description="Tickets by status and category"
 			>
-				<div className="h-36 w-full">
+				<div className="h-56 w-full">
 					<ResponsiveContainer
 						width="100%"
 						height="100%"
 					>
 						<BarChart
 							data={ticketBarData}
-							margin={{ top: 10, right: 20, bottom: 10, left: 0 }}
+							margin={{ top: 10, right: 10, bottom: 0, left: -20 }}
 						>
-							<CartesianGrid stroke="rgba(255,255,255,0.08)" />
+							<CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
 							<XAxis
 								dataKey="status"
-								tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
+								tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
+								axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
 							/>
-							<YAxis tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }} />
+							<YAxis 
+								tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
+								axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+							/>
 							<Tooltip
 								contentStyle={{
-									background: 'rgba(5,5,5,0.9)',
-									border: '1px solid rgba(255,255,255,0.1)',
+									background: '#0f172a',
+									border: '1px solid #334155',
+									borderRadius: '8px',
+									color: '#f8fafc'
 								}}
 							/>
-							<Legend />
+							<Legend verticalAlign="top" align="right" height={36}/>
 							<Bar
 								dataKey="maintenance"
-								fill="#60a5fa"
-								radius={[6, 6, 0, 0]}
+								name="Maintenance"
+								fill="#3b82f6"
+								radius={[4, 4, 0, 0]}
+								barSize={24}
 							/>
 							<Bar
 								dataKey="complaints"
-								fill="#fbbf24"
-								radius={[6, 6, 0, 0]}
+								name="Complaints"
+								fill="#f59e0b"
+								radius={[4, 4, 0, 0]}
+								barSize={24}
 							/>
 						</BarChart>
 					</ResponsiveContainer>
