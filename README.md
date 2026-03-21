@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hostel Management System (HMS)
 
-## Getting Started
+A modern, full-stack application built with Next.js, Prisma, and PostgreSQL for efficient hostel administration.
 
-First, run the development server:
+![Dashboard Preview](file:///C:/Users/Key%20Sho%20Wor/.gemini/antigravity/brain/d5b241d3-7546-45e8-b5d0-332403ec48da/admin_dashboard_ui_1774106778840.png)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Premium Authentication**: Custom-built login portal with glassmorphism design and secure session management via NextAuth.
+- **Enhanced Dashboard**: Visual-first administration with AreaCharts and PieCharts for real-time monitoring of occupancy, revenue, and attendance.
+- **Realistic Data Seeding**: Robust seed script to generate 12+ students, 3 months of financial history, and 30 days of attendance for immediate testing.
+- **Operations Management**:
+    - **Rooms & Beds**: Track allocation and capacity.
+    - **Billing**: Automated invoice generation and payment tracking.
+    - **Attendance**: Daily presence logs.
+    - **Support Tickets**: Integrated maintenance and complaint ticketing system.
+- **Announcements**: Broadcast system for notices and updates.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Setup & Installation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Environment Variables**: Create a `.env` file in the root directory:
+   ```env
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/hms"
+   NEXTAUTH_SECRET="your-secret-here"
+   NEXTAUTH_URL="http://localhost:3000"
+   ```
 
-## Learn More
+2. **Database Setup**:
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. **Seed Demo Data**:
+   ```bash
+   npx -y tsx prisma/seed.ts
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔐 Login Credentials (Demo)
 
-## Deploy on Vercel
+| Role | Email | Password |
+|------|-------|----------|
+| **Admin** | `admin@hostel.local` | `admin123` |
+| **Warden** | `warden@hostel.local` | `staff123` |
+| **Student** | `suman@student.local` | `student123` |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🧪 Tech Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Framework**: Next.js 14 (App Router)
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js
+- **Charts**: Recharts
+- **Styling**: Tailwind CSS & Framer Motion (Glassmorphism)
+- **UI Components**: Radix UI & Lucide Icons
