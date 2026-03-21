@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import type { UserRole } from '@/generated/prisma/enums';
 import { requireRole } from '@/lib/auth';
+import LogoutButton from '@/components/auth/LogoutButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +76,9 @@ export default async function AdminLayout({
 								label="Announcements"
 							/>
 						</nav>
+						<div className="mt-4 pt-4 border-t border-slate-700/50">
+							<LogoutButton />
+						</div>
 					</aside>
 
 					<main>{children}</main>
