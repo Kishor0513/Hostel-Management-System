@@ -2,7 +2,7 @@
 
 A modern, full-stack application built with Next.js, Prisma, and PostgreSQL for efficient hostel administration.
 
-![Dashboard Preview](file:///C:/Users/Key%20Sho%20Wor/.gemini/antigravity/brain/d5b241d3-7546-45e8-b5d0-332403ec48da/admin_dashboard_ui_1774106778840.png)
+![Dashboard Preview](/C:/Users/Key%20Sho%20Wor/.gemini/antigravity/brain/d5b241d3-7546-45e8-b5d0-332403ec48da/admin_dashboard_ui_1774106778840.png)
 
 ## 🚀 Key Features
 
