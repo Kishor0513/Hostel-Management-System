@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 export default function LogoutButton() {
 	return (
 		<Button
-			variant="outline"
+			variant="secondary"
 			onClick={() => signOut({ callbackUrl: '/login' })}
-			className="w-full border-red-500/20 bg-red-500/10 text-xs font-medium text-red-400 hover:bg-red-500 hover:text-white transition-all"
+			className="h-8 px-3 text-xs font-medium"
 		>
 			Sign Out
 		</Button>
