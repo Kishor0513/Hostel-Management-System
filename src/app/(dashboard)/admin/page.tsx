@@ -217,8 +217,10 @@ export default async function AdminDashboardPage() {
 		<div className="space-y-3">
 			<div className="flex items-center justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-semibold text-white/95">Dashboard</h1>
-					<p className="text-xs text-white/60">
+					<h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+						Dashboard
+					</h1>
+					<p className="text-xs text-slate-600 dark:text-slate-300/80">
 						Real-time metrics backed by your hostel database.
 					</p>
 				</div>
