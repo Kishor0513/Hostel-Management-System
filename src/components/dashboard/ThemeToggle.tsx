@@ -44,7 +44,7 @@ export default function ThemeToggle() {
 			variant="secondary"
 			size="icon"
 			onClick={toggleMode}
-			className="h-8 w-8 rounded-full"
+			className="h-9 w-9 rounded-full border-white/12 bg-white/10 text-slate-100 hover:bg-white/15"
 			aria-label={
 				ready
 					? `Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`
