@@ -10,16 +10,20 @@ export default function KpiCard({
 	helper?: string;
 }) {
 	return (
-		<Card className="bg-slate-800/50 border-slate-700">
+		<Card className="border-white/20 bg-white/10">
 			<CardHeader className="pb-2">
-				<CardTitle className="text-xs font-medium text-white/70">
+				<CardTitle className="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-slate-300/80">
 					{label}
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="pt-0 pb-0 px-4">
-				<div className="text-2xl font-semibold text-white/90">{value}</div>
+				<div className="text-4xl font-semibold leading-tight text-slate-900 dark:text-white">
+					{value}
+				</div>
 				{helper ? (
-					<div className="mt-0.5 text-xs text-white/60">{helper}</div>
+					<div className="mt-1 text-xs text-slate-500 dark:text-slate-300/80">
+						{helper}
+					</div>
 				) : null}
 			</CardContent>
 		</Card>
