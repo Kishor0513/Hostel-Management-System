@@ -9,7 +9,7 @@ export function Card({
 	return (
 		<div
 			className={cn(
-				'rounded-2xl border border-white/70 bg-white/50 shadow-[0_18px_42px_rgba(126,145,173,0.3)] backdrop-blur-2xl supports-backdrop-filter:bg-white/58 dark:border-white/15 dark:bg-slate-900/35 dark:shadow-[0_18px_42px_rgba(2,8,23,0.45)] dark:supports-backdrop-filter:bg-slate-900/45',
+				'rounded-2xl border border-white/55 bg-white/48 shadow-[0_16px_34px_rgba(126,145,173,0.24)] backdrop-blur-2xl supports-backdrop-filter:bg-white/56 dark:border-white/10 dark:bg-slate-900/58 dark:shadow-[0_18px_40px_rgba(2,8,23,0.42)] dark:supports-backdrop-filter:bg-slate-900/64',
 				className,
 			)}
 			{...props}
@@ -50,7 +50,7 @@ export function CardDescription({
 }: React.HTMLAttributes<HTMLParagraphElement>) {
 	return (
 		<p
-			className={cn('text-sm text-slate-500 dark:text-slate-300/80', className)}
+			className={cn('text-sm text-slate-600 dark:text-slate-300/85', className)}
 			{...props}
 		/>
 	);
