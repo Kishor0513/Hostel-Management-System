@@ -23,52 +23,63 @@ export default async function AdminLayout({
 				<div className="absolute -bottom-40 -right-32 h-104 w-104 rounded-full bg-indigo-200/40 blur-[130px] dark:bg-indigo-600/25" />
 			</div>
 
-			<div className="mx-auto w-full max-w-350 px-4 py-4 lg:px-6">
-				<header className="rounded-2xl border border-white/70 bg-white/55 px-4 py-3 shadow-[0_18px_48px_rgba(125,146,178,0.32)] backdrop-blur-2xl dark:border-white/15 dark:bg-slate-900/40 dark:shadow-[0_18px_48px_rgba(2,8,23,0.45)]">
-					<div className="flex flex-wrap items-center gap-3 lg:flex-nowrap">
+			<div className="mx-auto w-full max-w-350 px-4 py-5 lg:px-6 lg:py-6">
+				<header className="rounded-3xl border border-white/12 bg-slate-950/72 px-4 py-4 shadow-[0_22px_62px_rgba(3,7,18,0.58)] backdrop-blur-2xl lg:px-5">
+					<div className="flex flex-wrap items-start gap-4 xl:flex-nowrap">
 						<Link
 							href="/admin"
-							className="flex items-center gap-3 shrink-0"
+							className="flex shrink-0 items-center gap-3"
 						>
-							<div className="grid h-10 w-10 place-items-center rounded-xl bg-[#1f2a44] ring-1 ring-[#1f2a44]/40">
+							<div className="grid h-11 w-11 place-items-center rounded-2xl bg-linear-to-br from-sky-500 to-blue-700 shadow-[0_14px_30px_rgba(2,132,199,0.45)] ring-1 ring-white/30">
 								<span className="text-sm font-bold text-white">O</span>
 							</div>
 							<div>
-								<p className="text-xs uppercase tracking-[0.12em] text-slate-500">
+								<p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-300/80">
 									Hostel Suite
 								</p>
-								<p className="text-lg font-semibold leading-none text-slate-900">
+								<p className="text-xl font-semibold leading-none text-slate-900 dark:text-white">
 									Admin Console
+								</p>
+								<p className="mt-1 text-xs text-slate-600 dark:text-slate-300/75">
+									Operations and analytics center
 								</p>
 							</div>
 						</Link>
 
-						<div className="min-w-0 flex-1">
+						<div className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/5 p-3">
 							<AdminTopNav />
 						</div>
 
-						<div className="ml-auto flex items-center gap-2 rounded-xl border border-white/75 bg-white/60 px-2.5 py-2 backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/40">
-							<Link
-								href="/admin/settings"
-								className="rounded-lg px-2 py-1 text-xs font-medium text-slate-700 transition hover:bg-white/70 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white"
-							>
-								Settings
-							</Link>
-							<ThemeToggle />
-							<div className="hidden text-right md:block">
-								<p className="text-sm font-medium leading-none text-slate-900 dark:text-white">
-									{user.name}
-								</p>
-								<p className="mt-1 text-xs text-slate-500 dark:text-slate-300/80">
-									{user.role}
-								</p>
+						<div className="ml-auto flex min-w-56 items-center justify-between gap-3 rounded-2xl border border-white/12 bg-white/10 px-3 py-2.5">
+							<div className="flex items-center gap-3">
+								<div className="grid h-9 w-9 place-items-center rounded-xl bg-sky-500/20 text-sm font-semibold text-sky-100 ring-1 ring-sky-400/35">
+									{user.name?.slice(0, 1)?.toUpperCase() ?? 'A'}
+								</div>
+								<div className="min-w-0">
+									<p className="truncate text-sm font-semibold leading-none text-slate-900 dark:text-white">
+										{user.name}
+									</p>
+									<p className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300/80">
+										{user.role}
+									</p>
+								</div>
 							</div>
-							<LogoutButton />
+
+							<div className="flex items-center gap-2">
+								<Link
+									href="/admin/settings"
+									className="glass-hover rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white/14 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+								>
+									Settings
+								</Link>
+								<ThemeToggle />
+								<LogoutButton />
+							</div>
 						</div>
 					</div>
 				</header>
 
-				<main className="mt-4">{children}</main>
+				<main className="mt-5">{children}</main>
 			</div>
 		</div>
 	);
