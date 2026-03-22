@@ -1,5 +1,6 @@
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import KpiCard from '@/components/dashboard/KpiCard';
+import { Button } from '@/components/ui/button';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -212,27 +213,77 @@ async function loadDashboardData(): Promise<DashboardData> {
 export default async function AdminDashboardPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 	const data = await loadDashboardData();
+	const now = new Date();
 
 	return (
-		<div className="space-y-3">
-			<div className="flex items-center justify-between gap-4">
-				<div>
-					<h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-						Dashboard
-					</h1>
-					<p className="text-xs text-slate-600 dark:text-slate-300/80">
-						Real-time metrics backed by your hostel database.
-					</p>
+		<div className="space-y-5 lg:space-y-6">
+			<div className="glass-hover rounded-3xl border border-white/12 bg-slate-950/70 px-4 py-4 shadow-[0_20px_56px_rgba(3,8,24,0.5)] backdrop-blur-2xl lg:px-6 lg:py-5">
+				<div className="flex flex-wrap items-start justify-between gap-4">
+					<div>
+						<p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300/90">
+							Overview
+						</p>
+						<h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[2.1rem]">
+							Dashboard
+						</h1>
+						<p className="mt-1 text-sm text-slate-700 dark:text-slate-200/80">
+							Live occupancy, billing health, and support pulse from your hostel data.
+						</p>
+					</div>
+
+					<div className="flex flex-wrap items-center gap-2">
+						<Button
+							variant="secondary"
+							className="h-9 border-white/12 bg-white/10 text-slate-100 hover:bg-white/15"
+						>
+							Export Report
+						</Button>
+						<Button
+							className="h-9 bg-sky-500 text-white shadow-[0_10px_24px_rgba(2,132,199,0.34)] hover:bg-sky-400"
+						>
+							Create Announcement
+						</Button>
+					</div>
+				</div>
+
+				<div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+					<div className="glass-hover rounded-xl border border-white/12 bg-white/10 px-3 py-2.5">
+						<p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300/85">
+							Snapshot Date
+						</p>
+						<p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+							{now.toLocaleDateString('en-US', {
+								weekday: 'short',
+								day: '2-digit',
+								month: 'short',
+								year: 'numeric',
+							})}
+						</p>
+					</div>
+					<div className="glass-hover rounded-xl border border-white/12 bg-white/10 px-3 py-2.5">
+						<p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300/85">
+							Occupied Beds
+						</p>
+						<p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+							{data.occupiedBeds}
+						</p>
+					</div>
+					<div className="glass-hover rounded-xl border border-white/12 bg-white/10 px-3 py-2.5">
+						<p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300/85">
+							Open Support Tickets
+						</p>
+						<p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">{data.openTickets}</p>
+					</div>
 				</div>
 			</div>
 
 			{data.dataError ? (
-				<div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+				<div className="rounded-xl border border-amber-400/45 bg-amber-500/14 px-3 py-2 text-xs font-medium text-amber-100">
 					{data.dataError}
 				</div>
 			) : null}
 
-			<div className="grid grid-cols-1 gap-2 md:grid-cols-4">
+			<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
 				<KpiCard
 					label="Occupancy"
 					value={`${(data.occupancyPct * 100).toFixed(0)}%`}
