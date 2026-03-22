@@ -20,7 +20,7 @@ export default function ChartCard({
 	children: ReactNode;
 }) {
 	return (
-		<Card className="bg-slate-800/50 border-slate-700">
+		<Card className="border-white/20 bg-white/10">
 			<CardHeader className="pb-2">
 				<CardTitle className="text-sm">{title}</CardTitle>
 				{description ? <CardDescription>{description}</CardDescription> : null}
