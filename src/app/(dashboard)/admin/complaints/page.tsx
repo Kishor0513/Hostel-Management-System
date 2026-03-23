@@ -28,10 +28,40 @@ export const dynamic = 'force-dynamic';
 export default async function ComplaintsPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type StaffResult = Awaited<ReturnType<typeof prisma.staff.findMany>>;
-	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
-	type RoomsResult = Awaited<ReturnType<typeof prisma.room.findMany>>;
-	type TicketsResult = Awaited<ReturnType<typeof prisma.complaintTicket.findMany>>;
+	const getStaff = () =>
+		prisma.staff.findMany({
+			orderBy: { staffCode: 'asc' },
+			include: { user: { select: { name: true, email: true } } },
+		});
+
+	const getStudents = () =>
+		prisma.student.findMany({
+			orderBy: { studentNumber: 'asc' },
+			include: { user: { select: { name: true } } },
+		});
+
+	const getRooms = () =>
+		prisma.room.findMany({
+			orderBy: [{ building: 'asc' }, { floor: 'asc' }, { roomNumber: 'asc' }],
+			select: { id: true, building: true, floor: true, roomNumber: true },
+		});
+
+	const getTickets = () =>
+		prisma.complaintTicket.findMany({
+			orderBy: { createdAt: 'desc' },
+			take: 20,
+			include: {
+				student: { include: { user: { select: { name: true } } } },
+				room: { select: { building: true, floor: true, roomNumber: true } },
+				assignedToStaff: { include: { user: { select: { name: true } } } },
+				logs: { orderBy: { changedAt: 'desc' }, take: 1 },
+			},
+		});
+
+	type StaffResult = Awaited<ReturnType<typeof getStaff>>;
+	type StudentsResult = Awaited<ReturnType<typeof getStudents>>;
+	type RoomsResult = Awaited<ReturnType<typeof getRooms>>;
+	type TicketsResult = Awaited<ReturnType<typeof getTickets>>;
 
 	let staff: StaffResult = [];
 	let students: StudentsResult = [];
@@ -41,28 +71,10 @@ export default async function ComplaintsPage() {
 
 	try {
 		[staff, students, rooms, tickets] = await Promise.all([
-			prisma.staff.findMany({
-				orderBy: { staffCode: 'asc' },
-				include: { user: { select: { name: true, email: true } } },
-			}),
-			prisma.student.findMany({
-				orderBy: { studentNumber: 'asc' },
-				include: { user: { select: { name: true } } },
-			}),
-			prisma.room.findMany({
-				orderBy: [{ building: 'asc' }, { floor: 'asc' }, { roomNumber: 'asc' }],
-				select: { id: true, building: true, floor: true, roomNumber: true },
-			}),
-			prisma.complaintTicket.findMany({
-				orderBy: { createdAt: 'desc' },
-				take: 20,
-				include: {
-					student: { include: { user: { select: { name: true } } } },
-					room: { select: { building: true, floor: true, roomNumber: true } },
-					assignedToStaff: { include: { user: { select: { name: true } } } },
-					logs: { orderBy: { changedAt: 'desc' }, take: 1 },
-				},
-			}),
+			getStaff(),
+			getStudents(),
+			getRooms(),
+			getTickets(),
 		]);
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
@@ -148,7 +160,11 @@ export default async function ComplaintsPage() {
 
 						<div className="space-y-2">
 							<Label htmlFor="studentId">Student (optional)</Label>
-							<select id="studentId" name="studentId" className="select-field">
+							<select
+								id="studentId"
+								name="studentId"
+								className="select-field"
+							>
 								<option value="">—</option>
 								{students.map((s) => (
 									<option
@@ -163,7 +179,11 @@ export default async function ComplaintsPage() {
 
 						<div className="space-y-2">
 							<Label htmlFor="roomId">Room (optional)</Label>
-							<select id="roomId" name="roomId" className="select-field">
+							<select
+								id="roomId"
+								name="roomId"
+								className="select-field"
+							>
 								<option value="">—</option>
 								{rooms.map((r) => (
 									<option
@@ -178,7 +198,11 @@ export default async function ComplaintsPage() {
 
 						<div className="space-y-2">
 							<Label htmlFor="assignedToStaffId">Assign Staff (optional)</Label>
-							<select id="assignedToStaffId" name="assignedToStaffId" className="select-field">
+							<select
+								id="assignedToStaffId"
+								name="assignedToStaffId"
+								className="select-field"
+							>
 								<option value="">—</option>
 								{staff.map((st) => (
 									<option
@@ -192,10 +216,13 @@ export default async function ComplaintsPage() {
 						</div>
 
 						<div className="lg:col-span-5 flex items-end justify-end">
-							<Button type="submit" size="sm">
-							<Plus className="h-3.5 w-3.5" />
-							Create Ticket
-						</Button>
+							<Button
+								type="submit"
+								size="sm"
+							>
+								<Plus className="h-3.5 w-3.5" />
+								Create Ticket
+							</Button>
 						</div>
 					</form>
 				</CardContent>
@@ -280,13 +307,23 @@ export default async function ComplaintsPage() {
 												value={t.id}
 											/>
 
-											<select name="status" defaultValue={t.status} className="select-field">
+											<select
+												name="status"
+												defaultValue={t.status}
+												className="select-field"
+											>
 												<option value="OPEN">OPEN</option>
 												<option value="IN_PROGRESS">IN_PROGRESS</option>
 												<option value="RESOLVED">RESOLVED</option>
 											</select>
 
-											<select name="assignedToStaffId" defaultValue={t.assignedToStaff ? t.assignedToStaff.id : ''} className="select-field">
+											<select
+												name="assignedToStaffId"
+												defaultValue={
+													t.assignedToStaff ? t.assignedToStaff.id : ''
+												}
+												className="select-field"
+											>
 												<option value="">—</option>
 												{staff.map((st) => (
 													<option
