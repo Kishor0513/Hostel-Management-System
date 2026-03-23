@@ -5,58 +5,75 @@ import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 
-type ThemeMode = 'light' | 'dark';
-
 const STORAGE_KEY = 'hms-theme-mode';
+type ThemeMode = 'light' | 'dark-violet';
+
+function runThemeTransitionAnimation() {
+	document.documentElement.classList.remove('theme-reveal-top-right');
+	void document.documentElement.offsetWidth;
+	document.documentElement.classList.add('theme-reveal-top-right');
+	window.setTimeout(() => {
+		document.documentElement.classList.remove('theme-reveal-top-right');
+	}, 560);
+}
 
 function applyTheme(mode: ThemeMode) {
+	runThemeTransitionAnimation();
 	document.documentElement.dataset.theme = mode;
-	document.documentElement.classList.toggle('dark', mode === 'dark');
+	document.documentElement.classList.toggle('dark', mode === 'dark-violet');
 }
 
 export default function ThemeToggle() {
-	const [mode, setMode] = useState<ThemeMode>('light');
-	const [ready, setReady] = useState(false);
+	const [mode, setMode] = useState<ThemeMode>(() => {
+		if (typeof window === 'undefined') {
+			return 'dark-violet';
+		}
+
+		const saved = window.localStorage.getItem(STORAGE_KEY);
+		return saved === 'light' ? 'light' : 'dark-violet';
+	});
 
 	useEffect(() => {
-		const saved = window.localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-		const systemPrefersDark = window.matchMedia(
-			'(prefers-color-scheme: dark)',
-		).matches;
-		const initial: ThemeMode = saved ?? (systemPrefersDark ? 'dark' : 'light');
-		setMode(initial);
-		applyTheme(initial);
-		setReady(true);
-	}, []);
+		applyTheme(mode);
+		window.localStorage.setItem(STORAGE_KEY, mode);
+	}, [mode]);
 
 	function toggleMode() {
-		const nextMode: ThemeMode = mode === 'dark' ? 'light' : 'dark';
-		setMode(nextMode);
-		applyTheme(nextMode);
-		window.localStorage.setItem(STORAGE_KEY, nextMode);
+		setMode((prev) => (prev === 'dark-violet' ? 'light' : 'dark-violet'));
 	}
-
-	const Icon = mode === 'dark' ? SunMedium : Moon;
 
 	return (
 		<Button
 			type="button"
 			variant="secondary"
-			size="icon"
 			onClick={toggleMode}
-			className="h-9 w-9 rounded-full border-white/12 bg-white/10 text-slate-100 hover:bg-white/15"
-			aria-label={
-				ready
-					? `Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`
-					: 'Toggle theme'
-			}
-			title={
-				ready
-					? `Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`
-					: 'Toggle theme'
-			}
+			onPointerMove={(e) => {
+				const header = e.currentTarget.closest('header') as HTMLElement;
+				const rect = e.currentTarget.getBoundingClientRect();
+				e.currentTarget.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+				e.currentTarget.style.setProperty('--my', `${e.clientY - rect.top}px`);
+				if (header) {
+					const hRect = header.getBoundingClientRect();
+					header.style.setProperty('--mx', `${e.clientX - hRect.left}px`);
+					header.style.setProperty('--my', `${e.clientY - hRect.top}px`);
+				}
+			}}
+			onPointerLeave={(e) => {
+				e.currentTarget.style.setProperty('--mx', '50%');
+				e.currentTarget.style.setProperty('--my', '50%');
+			}}
+			className="h-9 rounded-full border-slate-300/55 bg-white/80 px-3 text-slate-700 hover:bg-white dark:border-slate-400/30 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:bg-slate-700 transition-all duration-300 nav-spotlight"
+			aria-label={`Current theme ${mode === 'dark-violet' ? 'Violet Dark' : 'White'}. Click to switch.`}
+			title={`Current theme ${mode === 'dark-violet' ? 'Violet Dark' : 'White'}`}
 		>
-			<Icon className="h-4 w-4" />
+			{mode === 'dark-violet' ? (
+				<SunMedium className="h-4 w-4" />
+			) : (
+				<Moon className="h-4 w-4" />
+			)}
+			<span className="text-xs font-semibold tracking-[0.01em]">
+				{mode === 'dark-violet' ? 'Violet Dark' : 'White'}
+			</span>
 		</Button>
 	);
 }
