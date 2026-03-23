@@ -28,9 +28,30 @@ export const dynamic = 'force-dynamic';
 export default async function AttendancePage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
-	type RecentResult = Awaited<
-		ReturnType<typeof prisma.attendanceRecord.findMany>
+	const getStudents = () =>
+		prisma.student.findMany({
+			orderBy: { studentNumber: 'asc' },
+			include: { user: { select: { id: true, name: true } } },
+		});
+
+	const getRecent = () =>
+		prisma.attendanceRecord.findMany({
+			take: 25,
+			orderBy: { date: 'desc' },
+			include: { student: { include: { user: { select: { name: true } } } } },
+		});
+
+	const getAttendanceForRate = (thirtyDaysAgo: Date) =>
+		prisma.attendanceRecord.findMany({
+			where: {
+				date: { gte: thirtyDaysAgo },
+			},
+		});
+
+	type StudentsResult = Awaited<ReturnType<typeof getStudents>>;
+	type RecentResult = Awaited<ReturnType<typeof getRecent>>;
+	type AttendanceForRateResult = Awaited<
+		ReturnType<typeof getAttendanceForRate>
 	>;
 
 	const thirtyDaysAgo = new Date();
@@ -38,25 +59,14 @@ export default async function AttendancePage() {
 
 	let students: StudentsResult = [];
 	let recent: RecentResult = [];
-	let attendanceForRate: RecentResult = [];
+	let attendanceForRate: AttendanceForRateResult = [];
 	let dataError: string | null = null;
 
 	try {
 		[students, recent, attendanceForRate] = await Promise.all([
-			prisma.student.findMany({
-				orderBy: { studentNumber: 'asc' },
-				include: { user: { select: { id: true, name: true } } },
-			}),
-			prisma.attendanceRecord.findMany({
-				take: 25,
-				orderBy: { date: 'desc' },
-				include: { student: { include: { user: { select: { name: true } } } } },
-			}),
-			prisma.attendanceRecord.findMany({
-				where: {
-					date: { gte: thirtyDaysAgo },
-				},
-			}),
+			getStudents(),
+			getRecent(),
+			getAttendanceForRate(thirtyDaysAgo),
 		]);
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
