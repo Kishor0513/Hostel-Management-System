@@ -1,3 +1,4 @@
+import { ShieldCheck, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +30,9 @@ export const dynamic = 'force-dynamic';
 export default async function StaffPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	let staff: any[] = [];
+	type StaffResult = Awaited<ReturnType<typeof prisma.staff.findMany>>;
+
+	let staff: StaffResult = [];
 	let dataError: string | null = null;
 
 	try {
@@ -45,43 +48,67 @@ export default async function StaffPage() {
 
 	return (
 		<div className="space-y-6">
+			{/* Page Header */}
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">Staff Management</h1>
+					<p className="page-subtitle">
+						Manage administrative and maintenance personnel.
+					</p>
+				</div>
+				<Badge
+					variant="info"
+					className="h-fit"
+				>
+					Total Staff: {staff.length}
+				</Badge>
+			</div>
+
 			{dataError ? (
-				<div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-					{dataError}
+				<div className="flex items-center gap-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+					<span className="shrink-0 text-base">⚠</span> {dataError}
 				</div>
 			) : null}
 
+			{/* Add Staff Form */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Staff</CardTitle>
-					<CardDescription>
-						Create staff accounts for maintenance and complaint workflow.
-					</CardDescription>
+					<div className="flex items-center gap-2">
+						<div className="grid h-8 w-8 place-items-center rounded-lg bg-rose-500/20 text-rose-300">
+							<UserPlus className="h-4 w-4" />
+						</div>
+						<div>
+							<CardTitle>Add New Staff</CardTitle>
+							<CardDescription>Add staff member</CardDescription>
+						</div>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<form
 						action={createStaffAction}
 						className="grid grid-cols-1 gap-4 lg:grid-cols-3"
 					>
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="name">Full Name</Label>
 							<Input
 								id="name"
 								name="name"
 								required
+								placeholder="Ex: Ram Bahadur"
 							/>
 						</div>
-						<div className="space-y-2">
-							<Label htmlFor="email">Email</Label>
+						<div className="space-y-1.5">
+							<Label htmlFor="email">Email Address</Label>
 							<Input
 								id="email"
 								name="email"
 								type="email"
 								required
+								placeholder="staff@example.com"
 							/>
 						</div>
-						<div className="space-y-2">
-							<Label htmlFor="password">Password</Label>
+						<div className="space-y-1.5">
+							<Label htmlFor="password">Login Password</Label>
 							<Input
 								id="password"
 								name="password"
@@ -89,82 +116,107 @@ export default async function StaffPage() {
 								required
 							/>
 						</div>
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="staffCode">Staff Code</Label>
 							<Input
 								id="staffCode"
 								name="staffCode"
 								required
+								placeholder="ST-001"
 							/>
 						</div>
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="designation">Designation</Label>
 							<Input
 								id="designation"
 								name="designation"
-								placeholder="Manager / Warden / ..."
+								placeholder="Manager / Warden"
 							/>
 						</div>
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="department">Department</Label>
 							<Input
 								id="department"
 								name="department"
-								placeholder="Hostel Ops / Admin / ..."
+								placeholder="Ops / Admin"
 							/>
 						</div>
 
-						<div className="lg:col-span-3 flex items-end justify-end">
-							<Button type="submit">Add Staff</Button>
+						<div className="lg:col-span-3 flex justify-end pt-2">
+							<Button
+								type="submit"
+								className="bg-rose-600 hover:bg-rose-500"
+							>
+								Register Staff
+							</Button>
 						</div>
 					</form>
 				</CardContent>
 			</Card>
 
+			{/* Staff Directory */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Staff Directory</CardTitle>
-					<CardDescription>
-						Staff users can be assigned to maintenance and complaint tickets.
-					</CardDescription>
+					<div className="flex items-center gap-2">
+						<div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-500/20 text-slate-300">
+							<Users className="h-4 w-4" />
+						</div>
+						<div>
+							<CardTitle>Staff Directory</CardTitle>
+							<CardDescription>Directory</CardDescription>
+						</div>
+					</div>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="p-0">
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Staff</TableHead>
-								<TableHead className="w-[160px]">Staff Code</TableHead>
-								<TableHead className="w-[180px]">Designation</TableHead>
-								<TableHead className="w-[120px]">Role</TableHead>
-								<TableHead className="w-[120px]">Actions</TableHead>
+								<TableHead>Staff Member</TableHead>
+								<TableHead className="w-35">Code</TableHead>
+								<TableHead className="w-40">Designation</TableHead>
+								<TableHead className="w-30">Role</TableHead>
+								<TableHead className="w-25 text-right">Action</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{staff.map((st) => (
 								<TableRow key={st.id}>
 									<TableCell>
-										<div className="space-y-1">
-											<div className="font-medium text-white/90">
-												{st.user.name}
+										<div className="flex items-center gap-3">
+											<div className="grid h-8 w-8 place-items-center rounded-full bg-slate-800 text-[0.65rem] font-bold text-slate-300 ring-1 ring-white/10">
+												{st.user.name.slice(0, 1).toUpperCase()}
 											</div>
-											<div className="text-xs text-white/60">
-												{st.user.email}
+											<div className="space-y-0.5">
+												<div className="font-semibold text-white/95">
+													{st.user.name}
+												</div>
+												<div className="text-[0.7rem] text-slate-500 tracking-wide">
+													{st.user.email}
+												</div>
 											</div>
 										</div>
 									</TableCell>
-									<TableCell>{st.staffCode}</TableCell>
-									<TableCell>{st.designation ?? '—'}</TableCell>
+									<TableCell className="text-sm font-medium text-slate-400">
+										{st.staffCode}
+									</TableCell>
+									<TableCell className="text-sm text-slate-300">
+										{st.designation ?? '—'}
+									</TableCell>
 									<TableCell>
 										<Badge
 											variant={st.user.role === 'ADMIN' ? 'success' : 'default'}
+											className="flex w-fit items-center gap-1.5"
 										>
+											{st.user.role === 'ADMIN' && (
+												<ShieldCheck className="h-3 w-3" />
+											)}
 											{st.user.role}
 										</Badge>
 									</TableCell>
-									<TableCell>
+									<TableCell className="text-right">
 										<Link
 											href={`/admin/staff/${st.id}`}
-											className="text-sm text-white/80 hover:text-white"
+											className="text-xs font-bold uppercase tracking-widest text-rose-400 hover:text-rose-300 transition-colors"
 										>
 											Edit
 										</Link>
@@ -173,11 +225,11 @@ export default async function StaffPage() {
 							))}
 							{staff.length === 0 ? (
 								<TableRow>
-									<TableCell
-										colSpan={5}
-										className="text-white/60"
-									>
-										No staff yet.
+									<TableCell colSpan={5}>
+										<div className="data-empty">
+											<Users className="data-empty-icon" />
+											<p>No staff records found. Add personnel above.</p>
+										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
