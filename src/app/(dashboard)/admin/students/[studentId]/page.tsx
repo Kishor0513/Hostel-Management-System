@@ -28,7 +28,9 @@ export default async function EditStudentPage({
 }) {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	let student: any = null;
+	type StudentResult = Awaited<ReturnType<typeof prisma.student.findUnique>>;
+
+	let student: StudentResult = null;
 	let dataError: string | null = null;
 
 	try {
