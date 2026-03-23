@@ -28,14 +28,9 @@ export default async function EditRoomPage({
 }) {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type RoomResult = Awaited<ReturnType<typeof prisma.room.findUnique>>;
-
-	let room: RoomResult = null;
-	let dataError: string | null = null;
-
-	try {
-		room = await prisma.room.findUnique({
-			where: { id: params.roomId },
+	const getRoom = (roomId: string) =>
+		prisma.room.findUnique({
+			where: { id: roomId },
 			include: {
 				beds: {
 					include: {
@@ -47,6 +42,14 @@ export default async function EditRoomPage({
 				},
 			},
 		});
+
+	type RoomResult = Awaited<ReturnType<typeof getRoom>>;
+
+	let room: RoomResult = null;
+	let dataError: string | null = null;
+
+	try {
+		room = await getRoom(params.roomId);
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
