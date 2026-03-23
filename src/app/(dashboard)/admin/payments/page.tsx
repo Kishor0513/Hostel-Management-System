@@ -31,32 +31,35 @@ export const dynamic = 'force-dynamic';
 export default async function PaymentsPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
-	type InvoicesResult = Awaited<ReturnType<typeof prisma.invoice.findMany>>;
+	const getStudents = () =>
+		prisma.student.findMany({
+			orderBy: { studentNumber: 'asc' },
+			include: { user: { select: { name: true } } },
+		});
+
+	const getInvoices = () =>
+		prisma.invoice.findMany({
+			orderBy: { dueDate: 'desc' },
+			take: 15,
+			include: {
+				student: {
+					include: { user: { select: { name: true, email: true } } },
+				},
+				payments: {
+					select: { amountPaid: true, paymentDate: true, method: true },
+				},
+			},
+		});
+
+	type StudentsResult = Awaited<ReturnType<typeof getStudents>>;
+	type InvoicesResult = Awaited<ReturnType<typeof getInvoices>>;
 
 	let students: StudentsResult = [];
 	let invoices: InvoicesResult = [];
 	let dataError: string | null = null;
 
 	try {
-		[students, invoices] = await Promise.all([
-			prisma.student.findMany({
-				orderBy: { studentNumber: 'asc' },
-				include: { user: { select: { name: true } } },
-			}),
-			prisma.invoice.findMany({
-				orderBy: { dueDate: 'desc' },
-				take: 15,
-				include: {
-					student: {
-						include: { user: { select: { name: true, email: true } } },
-					},
-					payments: {
-						select: { amountPaid: true, paymentDate: true, method: true },
-					},
-				},
-			}),
-		]);
+		[students, invoices] = await Promise.all([getStudents(), getInvoices()]);
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
