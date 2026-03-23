@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
-import LogoutButton from '@/components/auth/LogoutButton';
 import AdminTopNav from '@/components/dashboard/AdminTopNav';
+import AdminUserMenu from '@/components/dashboard/AdminUserMenu';
 import ThemeToggle from '@/components/dashboard/ThemeToggle';
 import type { UserRole } from '@/generated/prisma/enums';
 import { requireRole } from '@/lib/auth';
@@ -16,70 +16,62 @@ export default async function AdminLayout({
 	const user = await requireRole(['ADMIN', 'STAFF'] satisfies UserRole[]);
 
 	return (
-		<div className="tahoe-shell min-h-screen overflow-x-hidden text-slate-900 dark:text-slate-100">
+		<div className="tahoe-shell relative min-h-screen overflow-x-hidden text-slate-900 dark:text-slate-100">
 			<div className="pointer-events-none fixed inset-0 -z-10">
-				<div className="absolute left-1/2 -top-72 h-160 w-160 -translate-x-1/2 rounded-full bg-sky-300/35 blur-[140px] dark:bg-cyan-500/20" />
-				<div className="absolute -left-28 top-40 h-96 w-96 rounded-full bg-cyan-200/45 blur-[120px] dark:bg-sky-500/20" />
-				<div className="absolute -bottom-40 -right-32 h-104 w-104 rounded-full bg-indigo-200/40 blur-[130px] dark:bg-indigo-600/25" />
+				{/* Rhododendron intensity */}
+				<div className="absolute left-1/2 -top-72 h-160 w-160 -translate-x-1/2 rounded-full bg-rose-300/30 blur-[140px] dark:bg-rose-500/15" />
+				{/* Himalayan Snow / Sky */}
+				<div className="absolute -left-28 top-40 h-96 w-96 rounded-full bg-amber-200/40 blur-[130px] dark:bg-sky-500/10" />
+				{/* Everest Deep Blue */}
+				<div className="absolute -bottom-40 -right-32 h-104 w-104 rounded-full bg-slate-200/40 blur-[130px] dark:bg-slate-700/30" />
 			</div>
 
-			<div className="mx-auto w-full max-w-350 px-4 py-5 lg:px-6 lg:py-6">
-				<header className="rounded-3xl border border-white/12 bg-slate-950/72 px-4 py-4 shadow-[0_22px_62px_rgba(3,7,18,0.58)] backdrop-blur-2xl lg:px-5">
-					<div className="flex flex-wrap items-start gap-4 xl:flex-nowrap">
-						<Link
-							href="/admin"
-							className="flex shrink-0 items-center gap-3"
-						>
-							<div className="grid h-11 w-11 place-items-center rounded-2xl bg-linear-to-br from-sky-500 to-blue-700 shadow-[0_14px_30px_rgba(2,132,199,0.45)] ring-1 ring-white/30">
-								<span className="text-sm font-bold text-white">O</span>
-							</div>
-							<div>
-								<p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-300/80">
-									Hostel Suite
-								</p>
-								<p className="text-xl font-semibold leading-none text-slate-900 dark:text-white">
-									Admin Console
-								</p>
-								<p className="mt-1 text-xs text-slate-600 dark:text-slate-300/75">
-									Operations and analytics center
-								</p>
-							</div>
-						</Link>
-
-						<div className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/5 p-3">
-							<AdminTopNav />
-						</div>
-
-						<div className="ml-auto flex min-w-56 items-center justify-between gap-3 rounded-2xl border border-white/12 bg-white/10 px-3 py-2.5">
-							<div className="flex items-center gap-3">
-								<div className="grid h-9 w-9 place-items-center rounded-xl bg-sky-500/20 text-sm font-semibold text-sky-100 ring-1 ring-sky-400/35">
-									{user.name?.slice(0, 1)?.toUpperCase() ?? 'A'}
+			<div className="fixed top-0 left-0 right-0 z-40 w-full pointer-events-none">
+				<div className="mx-auto w-full max-w-350 px-4 lg:px-6">
+					<header className="nav-rail-spotlight mt-4 w-full rounded-2xl bg-slate-950/70 px-5 py-3.5 shadow-[0_20px_50px_rgba(10,7,21,0.6)] backdrop-blur-2xl pointer-events-auto lg:px-6">
+						<div className="flex items-center gap-4">
+							<Link
+								href="/admin"
+								className="flex shrink-0 items-center gap-3"
+							>
+								<div className="grid h-12 w-12 place-items-center rounded-lg bg-linear-to-br from-rose-500 to-rose-700 ring-1 ring-white/30 shadow-[0_12px_25px_rgba(225,29,72,0.4)]">
+									<span className="text-sm font-bold text-white">O</span>
 								</div>
-								<div className="min-w-0">
-									<p className="truncate text-sm font-semibold leading-none text-slate-900 dark:text-white">
-										{user.name}
+								<div className="hidden sm:block">
+									<p className="text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-slate-400">
+										Hostel Suite
 									</p>
-									<p className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300/80">
-										{user.role}
+									<p className="text-base font-bold leading-none text-slate-50">
+										Admin Console
 									</p>
 								</div>
+							</Link>
+
+							<div className="relative z-50 min-w-0 flex-1 flex justify-center">
+								<AdminTopNav />
 							</div>
 
-							<div className="flex items-center gap-2">
-								<Link
-									href="/admin/settings"
-									className="glass-hover rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white/14 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
-								>
-									Settings
-								</Link>
-								<ThemeToggle />
-								<LogoutButton />
+							<div className="relative z-50">
+								<AdminUserMenu
+									name={user.name}
+									role={user.role}
+								/>
 							</div>
 						</div>
+					</header>
+				</div>
+			</div>
+
+			<div className="relative z-10 w-full">
+				<main className="relative z-10 mx-auto w-full max-w-350 px-4 py-5 mt-24 lg:px-6 lg:py-6 lg:mt-28">
+					{children}
+				</main>
+
+				<div className="pointer-events-none fixed bottom-5 right-5 z-50 lg:bottom-6 lg:right-6">
+					<div className="pointer-events-auto rounded-2xl border border-white/20 bg-slate-950/72 p-1.5 shadow-[0_18px_42px_rgba(11,8,24,0.55)] backdrop-blur-xl">
+						<ThemeToggle />
 					</div>
-				</header>
-
-				<main className="mt-5">{children}</main>
+				</div>
 			</div>
 		</div>
 	);
