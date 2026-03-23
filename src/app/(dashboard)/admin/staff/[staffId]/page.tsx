@@ -28,7 +28,9 @@ export default async function EditStaffPage({
 }) {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	let staff: any = null;
+	type StaffResult = Awaited<ReturnType<typeof prisma.staff.findUnique>>;
+
+	let staff: StaffResult = null;
 	let dataError: string | null = null;
 
 	try {
