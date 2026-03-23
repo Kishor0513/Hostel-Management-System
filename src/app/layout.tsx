@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+
+import GlobalMouseFollow from '@/components/effects/GlobalMouseFollow';
+
 import './globals.css';
 
 const geistSans = Geist({
@@ -28,7 +31,10 @@ export default function RootLayout({
 			data-theme="light"
 			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
-			<body className="min-h-full flex flex-col bg-slate-950">{children}</body>
+			<body className="min-h-full flex flex-col bg-(--background)">
+				<GlobalMouseFollow />
+				{children}
+			</body>
 		</html>
 	);
 }
