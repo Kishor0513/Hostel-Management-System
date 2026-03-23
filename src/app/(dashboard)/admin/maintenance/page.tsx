@@ -19,6 +19,14 @@ import {
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import {
+	CheckCircle2,
+	Clock,
+	History,
+	Plus,
+	UserCheck,
+	Wrench,
+} from 'lucide-react';
 
 import { createMaintenanceRequest, updateMaintenanceStatus } from './actions';
 
@@ -27,10 +35,17 @@ export const dynamic = 'force-dynamic';
 export default async function MaintenancePage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	let staff: any[] = [];
-	let students: any[] = [];
-	let rooms: any[] = [];
-	let requests: any[] = [];
+	type StaffResult = Awaited<ReturnType<typeof prisma.staff.findMany>>;
+	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
+	type RoomsResult = Awaited<ReturnType<typeof prisma.room.findMany>>;
+	type RequestsResult = Awaited<
+		ReturnType<typeof prisma.maintenanceRequest.findMany>
+	>;
+
+	let staff: StaffResult = [];
+	let students: StudentsResult = [];
+	let rooms: RoomsResult = [];
+	let requests: RequestsResult = [];
 	let dataError: string | null = null;
 
 	try {
@@ -62,139 +77,228 @@ export default async function MaintenancePage() {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
 
+	const pendingCount = requests.filter((r) => r.status !== 'DONE').length;
+
 	return (
 		<div className="space-y-6">
+			{/* Page Header */}
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">Maintenance</h1>
+					<p className="page-subtitle">
+						Track and manage facility repair requests and staff assignments.
+					</p>
+				</div>
+				<Badge
+					variant={pendingCount > 0 ? 'warning' : 'success'}
+					className="h-fit"
+				>
+					Pending Issues: {pendingCount}
+				</Badge>
+			</div>
+
 			{dataError ? (
-				<div className="rounded-lg border border-amber-600/50 bg-amber-500/10 p-4 text-sm text-amber-600">
-					{dataError}
+				<div className="flex items-center gap-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+					<span className="shrink-0 text-base">⚠</span> {dataError}
 				</div>
 			) : null}
+
+			{/* Summary Stats */}
+			<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3 shadow-lg">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-rose-500/20 text-rose-300">
+						<Wrench className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400 font-medium">Total</div>
+						<div className="text-xl font-bold text-white tracking-tight">
+							{requests.length}
+						</div>
+					</div>
+				</div>
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3 shadow-lg">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-amber-500/20 text-amber-300">
+						<Clock className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400 font-medium">Pending</div>
+						<div className="text-xl font-bold text-white tracking-tight">
+							{pendingCount}
+						</div>
+					</div>
+				</div>
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3 shadow-lg">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/20 text-emerald-300">
+						<CheckCircle2 className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400 font-medium">Solved</div>
+						<div className="text-xl font-bold text-white tracking-tight">
+							{requests.length - pendingCount}
+						</div>
+					</div>
+				</div>
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3 shadow-lg">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-500/20 text-slate-300">
+						<UserCheck className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400 font-medium">Staff</div>
+						<div className="text-xl font-bold text-white tracking-tight">
+							{staff.length}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Create Request */}
 			<Card>
 				<CardHeader>
-					<CardTitle>New Maintenance Request</CardTitle>
-					<CardDescription>
-						Submit an issue; then staff can move it through the workflow.
-					</CardDescription>
+					<div className="flex items-center gap-2">
+						<div className="grid h-8 w-8 place-items-center rounded-lg bg-rose-500/20 text-rose-300">
+							<Plus className="h-4 w-4" />
+						</div>
+						<div>
+							<CardTitle>New Maintenance Request</CardTitle>
+							<CardDescription>Create a new maintenance issue</CardDescription>
+						</div>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<form
 						action={createMaintenanceRequest}
 						className="grid grid-cols-1 gap-4 lg:grid-cols-5"
 					>
-						<div className="space-y-2 lg:col-span-2">
-							<Label htmlFor="title">Title</Label>
+						<div className="space-y-1.5 lg:col-span-2">
+							<Label htmlFor="title">Issue Title</Label>
 							<Input
 								id="title"
 								name="title"
 								required
+								placeholder="Ex: Clogged drain / Fan not working"
 							/>
 						</div>
-
-						<div className="space-y-2 lg:col-span-3">
-							<Label htmlFor="description">Description</Label>
+						<div className="space-y-1.5 lg:col-span-3">
+							<Label htmlFor="description">Details</Label>
 							<Input
 								id="description"
 								name="description"
 								required
-								placeholder="What needs to be fixed?"
+								placeholder="Provide more context for staff..."
 							/>
 						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="studentId">Student (optional)</Label>
+						<div className="space-y-1.5">
+							<Label htmlFor="studentId">Student</Label>
 							<select
 								id="studentId"
 								name="studentId"
-								className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
+								className="select-field"
 							>
-								<option value="">—</option>
+								<option value="">— Select Student —</option>
 								{students.map((s) => (
 									<option
 										key={s.id}
 										value={s.id}
 									>
-										{s.user.name} ({s.studentNumber})
+										{s.user.name}
 									</option>
 								))}
 							</select>
 						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="roomId">Room (optional)</Label>
+						<div className="space-y-1.5">
+							<Label htmlFor="roomId">Room</Label>
 							<select
 								id="roomId"
 								name="roomId"
-								className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
+								className="select-field"
 							>
-								<option value="">—</option>
+								<option value="">— Select Room —</option>
 								{rooms.map((r) => (
 									<option
 										key={r.id}
 										value={r.id}
 									>
-										{r.building}-F{r.floor} / {r.roomNumber}
+										{r.building}-{r.floor}0{r.roomNumber}
 									</option>
 								))}
 							</select>
 						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="assignedToStaffId">Assign Staff (optional)</Label>
+						<div className="space-y-1.5">
+							<Label htmlFor="assignedToStaffId">Assign Staff</Label>
 							<select
 								id="assignedToStaffId"
 								name="assignedToStaffId"
-								className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
+								className="select-field"
 							>
-								<option value="">—</option>
+								<option value="">— (Unassigned) —</option>
 								{staff.map((st) => (
 									<option
 										key={st.id}
 										value={st.id}
 									>
-										{st.user.name} ({st.staffCode})
+										{st.user.name}
 									</option>
 								))}
 							</select>
 						</div>
-
-						<div className="lg:col-span-5 flex items-end justify-end">
-							<Button type="submit">Create Request</Button>
+						<div className="lg:col-span-2 flex items-end justify-end pb-0.5">
+							<Button
+								type="submit"
+								className="w-full bg-rose-600 hover:bg-rose-500 font-bold shadow-[0_10px_24px_rgba(225,29,72,0.3)]"
+							>
+								Create Request
+							</Button>
 						</div>
 					</form>
 				</CardContent>
 			</Card>
 
+			{/* Queue */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Maintenance Queue</CardTitle>
-					<CardDescription>
-						Update status and assign staff. Each update writes a log record.
-					</CardDescription>
+					<div className="flex items-center gap-2">
+						<div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-500/20 text-slate-300">
+							<History className="h-4 w-4" />
+						</div>
+						<div>
+							<CardTitle>Repair Queue</CardTitle>
+							<CardDescription>Repair process history</CardDescription>
+						</div>
+					</div>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="p-0">
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Request</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead>Assigned</TableHead>
-								<TableHead className="w-[220px]">Update</TableHead>
+								<TableHead>Problem Description</TableHead>
+								<TableHead className="w-30">Status</TableHead>
+								<TableHead className="w-45">Handled By</TableHead>
+								<TableHead className="w-60">Update Progress</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{requests.map((r) => (
 								<TableRow key={r.id}>
 									<TableCell>
-										<div className="space-y-1">
-											<div className="font-medium text-white/90">{r.title}</div>
-											<div className="text-xs text-white/60">
-												{r.student ? `Student: ${r.student.user.name}` : ''}
-												{r.room
-													? `${r.student ? ' • ' : ''}Room: ${r.room.building}-F${r.room.floor} / ${r.room.roomNumber}`
-													: ''}
+										<div className="space-y-1.5 py-1">
+											<div className="font-bold text-white/95 text-base tracking-tight">
+												{r.title}
 											</div>
-											<div className="text-xs text-white/45 line-clamp-2">
-												{r.description}
+											<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
+												{r.room && (
+													<span className="text-amber-400">
+														Room: {r.room.building}-{r.room.floor}0
+														{r.room.roomNumber}
+													</span>
+												)}
+												{r.student && (
+													<span className="text-slate-400">
+														Req by: {r.student.user.name}
+													</span>
+												)}
+											</div>
+											<div className="text-sm text-slate-400 pl-3.5 border-l-2 border-white/5 ml-0.5 max-w-sm line-clamp-2 italic leading-relaxed">
+												&quot;{r.description}&quot;
 											</div>
 										</div>
 									</TableCell>
@@ -207,89 +311,100 @@ export default async function MaintenancePage() {
 														? 'warning'
 														: 'default'
 											}
+											className="px-3"
 										>
 											{r.status}
 										</Badge>
-										{r.logs[0]?.comment ? (
-											<div className="mt-2 text-xs text-white/50">
-												{r.logs[0].comment}
+										{r.logs[0]?.comment && (
+											<div className="mt-2 text-[0.65rem] font-medium text-slate-500 leading-tight">
+												Latest Log: {r.logs[0].comment}
 											</div>
-										) : null}
+										)}
 									</TableCell>
 									<TableCell>
 										{r.assignedToStaff ? (
-											<div className="space-y-1">
-												<div className="text-sm text-white/90">
-													{r.assignedToStaff.user.name}
+											<div className="flex items-center gap-2.5">
+												<div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-[0.6rem] font-bold text-slate-400 ring-1 ring-white/10">
+													{r.assignedToStaff.user.name
+														.slice(0, 1)
+														.toUpperCase()}
 												</div>
-												<div className="text-xs text-white/55">
-													{r.assignedToStaff.staffCode}
+												<div className="space-y-0.5">
+													<div className="text-sm font-semibold text-white/90 leading-none">
+														{r.assignedToStaff.user.name}
+													</div>
+													<div className="text-[0.65rem] text-slate-500 tracking-wider uppercase font-bold">
+														{r.assignedToStaff.staffCode}
+													</div>
 												</div>
 											</div>
 										) : (
-											<span className="text-white/55">—</span>
+											<span className="text-xs font-bold text-slate-600 uppercase tracking-widest">
+												— (Unassigned)
+											</span>
 										)}
 									</TableCell>
 									<TableCell>
 										<form
 											action={updateMaintenanceStatus}
-											className="space-y-2"
+											className="space-y-2 py-1"
 										>
 											<input
 												type="hidden"
 												name="requestId"
 												value={r.id}
 											/>
-											<select
-												name="status"
-												defaultValue={r.status}
-												className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
-											>
-												<option value="OPEN">OPEN</option>
-												<option value="IN_PROGRESS">IN_PROGRESS</option>
-												<option value="DONE">DONE</option>
-											</select>
-
-											<select
-												name="assignedToStaffId"
-												defaultValue={
-													r.assignedToStaff ? r.assignedToStaff.id : ''
-												}
-												className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
-											>
-												<option value="">—</option>
-												{staff.map((st) => (
-													<option
-														key={st.id}
-														value={st.id}
-													>
-														{st.user.name} ({st.staffCode})
-													</option>
-												))}
-											</select>
-
-											<Input
-												name="comment"
-												placeholder="Log comment (optional)"
-											/>
-
-											<Button
-												type="submit"
-												className="w-full"
-											>
-												Update
-											</Button>
+											<div className="grid grid-cols-2 gap-2">
+												<select
+													name="status"
+													defaultValue={r.status}
+													className="h-8 rounded-lg border border-white/10 bg-white/5 px-2 text-[0.7rem] font-semibold text-white focus:border-rose-400/50 outline-none"
+												>
+													<option value="OPEN">OPEN</option>
+													<option value="IN_PROGRESS">IN_PROGRESS</option>
+													<option value="DONE">DONE</option>
+												</select>
+												<select
+													name="assignedToStaffId"
+													defaultValue={r.assignedToStaff?.id || ''}
+													className="h-8 rounded-lg border border-white/10 bg-white/5 px-2 text-[0.7rem] font-semibold text-white focus:border-rose-400/50 outline-none"
+												>
+													<option value="">Unassign</option>
+													{staff.map((st) => (
+														<option
+															key={st.id}
+															value={st.id}
+														>
+															{st.user.name.split(' ')[0]}
+														</option>
+													))}
+												</select>
+											</div>
+											<div className="flex gap-2">
+												<Input
+													name="comment"
+													placeholder="Work log..."
+													className="h-8 text-[0.7rem]"
+												/>
+												<Button
+													type="submit"
+													size="sm"
+													className="h-8 px-4 text-[0.7rem] font-bold"
+												>
+													Update
+												</Button>
+											</div>
 										</form>
 									</TableCell>
 								</TableRow>
 							))}
 							{requests.length === 0 ? (
 								<TableRow>
-									<TableCell
-										colSpan={4}
-										className="text-white/60"
-									>
-										No maintenance requests yet.
+									<TableCell colSpan={4}>
+										<div className="data-empty">
+											<Wrench className="data-empty-icon" />
+											<p>No maintenance requests yet.</p>
+										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
