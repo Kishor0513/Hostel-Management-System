@@ -220,14 +220,15 @@ export default async function AdminDashboardPage() {
 			<div className="glass-hover rounded-3xl border border-white/12 bg-slate-950/70 px-4 py-4 shadow-[0_20px_56px_rgba(3,8,24,0.5)] backdrop-blur-2xl lg:px-6 lg:py-5">
 				<div className="flex flex-wrap items-start justify-between gap-4">
 					<div>
-						<p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300/90">
+						<p className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-rose-600 dark:text-rose-400">
 							Overview
 						</p>
-						<h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[2.1rem]">
+						<h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-[2.2rem]">
 							Dashboard
 						</h1>
-						<p className="mt-1 text-sm text-slate-700 dark:text-slate-200/80">
-							Live occupancy, billing health, and support pulse from your hostel data.
+						<p className="mt-1.5 text-sm font-medium text-slate-600 dark:text-slate-300">
+							Live occupancy, billing health, and support pulse from your hostel
+							data.
 						</p>
 					</div>
 
@@ -238,20 +239,18 @@ export default async function AdminDashboardPage() {
 						>
 							Export Report
 						</Button>
-						<Button
-							className="h-9 bg-sky-500 text-white shadow-[0_10px_24px_rgba(2,132,199,0.34)] hover:bg-sky-400"
-						>
+						<Button className="h-9 bg-sky-500 text-white shadow-[0_10px_24px_rgba(2,132,199,0.34)] hover:bg-sky-400">
 							Create Announcement
 						</Button>
 					</div>
 				</div>
 
-				<div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-					<div className="glass-hover rounded-xl border border-white/12 bg-white/10 px-3 py-2.5">
-						<p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300/85">
+				<div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 group/snapshot-grid">
+					<div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 transition-all duration-300 hover:bg-white/10">
+						<p className="text-[0.65rem] font-bold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
 							Snapshot Date
 						</p>
-						<p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+						<p className="mt-1 text-base font-bold text-slate-900 dark:text-white">
 							{now.toLocaleDateString('en-US', {
 								weekday: 'short',
 								day: '2-digit',
@@ -260,19 +259,21 @@ export default async function AdminDashboardPage() {
 							})}
 						</p>
 					</div>
-					<div className="glass-hover rounded-xl border border-white/12 bg-white/10 px-3 py-2.5">
-						<p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300/85">
+					<div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 transition-all duration-300 hover:bg-white/10">
+						<p className="text-[0.65rem] font-bold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
 							Occupied Beds
 						</p>
-						<p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+						<p className="mt-1 text-base font-bold text-slate-900 dark:text-white">
 							{data.occupiedBeds}
 						</p>
 					</div>
-					<div className="glass-hover rounded-xl border border-white/12 bg-white/10 px-3 py-2.5">
-						<p className="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300/85">
-							Open Support Tickets
+					<div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 transition-all duration-300 hover:bg-white/10">
+						<p className="text-[0.65rem] font-bold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
+							Open Tickets
 						</p>
-						<p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">{data.openTickets}</p>
+						<p className="mt-1 text-base font-bold text-slate-900 dark:text-white">
+							{data.openTickets}
+						</p>
 					</div>
 				</div>
 			</div>
@@ -283,27 +284,35 @@ export default async function AdminDashboardPage() {
 				</div>
 			) : null}
 
-			<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-				<KpiCard
-					label="Occupancy"
-					value={`${(data.occupancyPct * 100).toFixed(0)}%`}
-					helper={`${data.occupiedBeds} occupied / ${data.availableBeds} available`}
-				/>
-				<KpiCard
-					label="Outstanding Fees"
-					value={formatMoney(data.totalOutstanding)}
-					helper="Sum of unpaid invoice balances"
-				/>
-				<KpiCard
-					label="Attendance Rate"
-					value={`${(data.attendanceOverallRate * 100).toFixed(0)}%`}
-					helper="Across last 30 days"
-				/>
-				<KpiCard
-					label="Open Tickets"
-					value={`${data.openTickets}`}
-					helper="Maintenance + Complaints"
-				/>
+			<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4 group/kpi-grid">
+				<div className="transition-opacity duration-300 group-hover/kpi-grid:opacity-60 hover:opacity-100!">
+					<KpiCard
+						label="Occupancy"
+						value={`${(data.occupancyPct * 100).toFixed(0)}%`}
+						helper={`${data.occupiedBeds} occupied / ${data.availableBeds} available`}
+					/>
+				</div>
+				<div className="transition-opacity duration-300 group-hover/kpi-grid:opacity-60 hover:opacity-100!">
+					<KpiCard
+						label="Outstanding Fees"
+						value={formatMoney(data.totalOutstanding)}
+						helper="Sum of unpaid invoice balances"
+					/>
+				</div>
+				<div className="transition-opacity duration-300 group-hover/kpi-grid:opacity-60 hover:opacity-100!">
+					<KpiCard
+						label="Attendance Rate"
+						value={`${(data.attendanceOverallRate * 100).toFixed(0)}%`}
+						helper="Across last 30 days"
+					/>
+				</div>
+				<div className="transition-opacity duration-300 group-hover/kpi-grid:opacity-60 hover:opacity-100!">
+					<KpiCard
+						label="Open Tickets"
+						value={`${data.openTickets}`}
+						helper="Maintenance + Complaints"
+					/>
+				</div>
 			</div>
 
 			<DashboardCharts
