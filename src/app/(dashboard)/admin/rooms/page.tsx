@@ -1,3 +1,4 @@
+import { BedDouble, Building2, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +29,10 @@ export const dynamic = 'force-dynamic';
 export default async function RoomsPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	let rooms: any[] = [];
+	type RoomsResult = Awaited<ReturnType<typeof prisma.room.findMany>>;
+	type BedItem = RoomsResult[number]['beds'][number];
+
+	let rooms: RoomsResult = [];
 	let dataError: string | null = null;
 
 	try {
@@ -49,27 +53,86 @@ export default async function RoomsPage() {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
 
+	const totalBeds = rooms.reduce((sum, r) => sum + r.beds.length, 0);
+	const occupiedBeds = rooms.reduce(
+		(sum, r) =>
+			sum + r.beds.filter((b: BedItem) => b.allocations.length > 0).length,
+		0,
+	);
+
 	return (
 		<div className="space-y-6">
+			{/* Page Header */}
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">Rooms &amp; Beds</h1>
+					<p className="page-subtitle">
+						Manage room inventory and track bed availability.
+					</p>
+				</div>
+			</div>
+
 			{dataError ? (
-				<div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+				<div className="flex items-center gap-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+					<span className="shrink-0 text-base">⚠</span>
 					{dataError}
 				</div>
 			) : null}
 
+			{/* Summary cards */}
+			<div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-violet-500/20 text-violet-300">
+						<Building2 className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400">Total Rooms</div>
+						<div className="text-xl font-bold text-white">{rooms.length}</div>
+					</div>
+				</div>
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/20 text-emerald-300">
+						<BedDouble className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400">Available Beds</div>
+						<div className="text-xl font-bold text-white">
+							{totalBeds - occupiedBeds}
+						</div>
+					</div>
+				</div>
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-rose-500/20 text-rose-300">
+						<BedDouble className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400">Occupied Beds</div>
+						<div className="text-xl font-bold text-white">{occupiedBeds}</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Add Room Form */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Rooms & Beds</CardTitle>
-					<CardDescription>
-						Create rooms and manage bed inventory.
-					</CardDescription>
+					<div className="flex items-center gap-2">
+						<div className="grid h-8 w-8 place-items-center rounded-lg bg-violet-500/20 text-violet-300">
+							<Plus className="h-4 w-4" />
+						</div>
+						<div>
+							<CardTitle>Add Room</CardTitle>
+							<CardDescription>
+								Create a new room and set its bed capacity.
+							</CardDescription>
+						</div>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<form
 						action={createRoomAction}
-						className="grid grid-cols-1 gap-4 md:grid-cols-4"
+						className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
 					>
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="building">Building</Label>
 							<Input
 								id="building"
@@ -78,7 +141,7 @@ export default async function RoomsPage() {
 								required
 							/>
 						</div>
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="floor">Floor</Label>
 							<Input
 								id="floor"
@@ -88,7 +151,7 @@ export default async function RoomsPage() {
 								required
 							/>
 						</div>
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="roomNumber">Room Number</Label>
 							<Input
 								id="roomNumber"
@@ -96,7 +159,7 @@ export default async function RoomsPage() {
 								required
 							/>
 						</div>
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="capacityBeds">Beds</Label>
 							<Input
 								id="capacityBeds"
@@ -106,46 +169,47 @@ export default async function RoomsPage() {
 								required
 							/>
 						</div>
-						<div className="md:col-span-4 flex items-end justify-end">
-							<Button type="submit">Add Room</Button>
+						<div className="sm:col-span-2 lg:col-span-4 flex justify-end pt-1">
+							<Button type="submit">
+								<Plus className="h-4 w-4" />
+								Add Room
+							</Button>
 						</div>
 					</form>
 				</CardContent>
 			</Card>
 
+			{/* Room Inventory */}
 			<Card>
 				<CardHeader>
 					<CardTitle>Inventory</CardTitle>
 					<CardDescription>
-						Availability is computed from active allocations (where `endDate` is
-						null).
+						Availability is computed from active allocations.
 					</CardDescription>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="p-0 pb-0 px-0">
 					<Table>
 						<TableHeader>
 							<TableRow>
 								<TableHead>Room</TableHead>
-								<TableHead className="w-[120px]">Capacity</TableHead>
-								<TableHead className="w-[140px]">Available</TableHead>
-								<TableHead className="w-[120px]">Occupied</TableHead>
-								<TableHead className="w-[120px]">Actions</TableHead>
+								<TableHead className="w-27.5">Capacity</TableHead>
+								<TableHead className="w-32.5">Available</TableHead>
+								<TableHead className="w-27.5">Occupied</TableHead>
+								<TableHead className="w-25">Actions</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{rooms.map((room) => {
 								const beds = room.beds;
 								const availableBeds = beds.filter(
-									(b) => b.allocations.length === 0,
+									(b: BedItem) => b.allocations.length === 0,
 								).length;
 								const occupiedBeds = beds.length - availableBeds;
 								return (
 									<TableRow key={room.id}>
 										<TableCell>
-											<div className="space-y-1">
-												<div className="font-medium text-white/90">
-													{room.building}-F{room.floor} / {room.roomNumber}
-												</div>
+											<div className="font-semibold text-white/90">
+												{room.building}-F{room.floor} / {room.roomNumber}
 											</div>
 										</TableCell>
 										<TableCell>{beds.length}</TableCell>
@@ -153,14 +217,16 @@ export default async function RoomsPage() {
 											<Badge
 												variant={availableBeds > 0 ? 'success' : 'warning'}
 											>
-												{availableBeds}
+												{availableBeds} free
 											</Badge>
 										</TableCell>
-										<TableCell>{occupiedBeds}</TableCell>
+										<TableCell>
+											<span className="text-slate-400">{occupiedBeds}</span>
+										</TableCell>
 										<TableCell>
 											<Link
 												href={`/admin/rooms/${room.id}`}
-												className="text-sm text-white/80 hover:text-white"
+												className="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
 											>
 												Edit
 											</Link>
@@ -170,11 +236,11 @@ export default async function RoomsPage() {
 							})}
 							{rooms.length === 0 ? (
 								<TableRow>
-									<TableCell
-										colSpan={5}
-										className="text-white/60"
-									>
-										No rooms found. Add one above.
+									<TableCell colSpan={5}>
+										<div className="data-empty">
+											<BedDouble className="data-empty-icon" />
+											<p>No rooms yet. Add one above.</p>
+										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
