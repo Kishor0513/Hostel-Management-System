@@ -31,11 +31,52 @@ export const dynamic = 'force-dynamic';
 export default async function AllocationsPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
-	type BedsResult = Awaited<ReturnType<typeof prisma.bed.findMany>>;
-	type AllocationsResult = Awaited<
-		ReturnType<typeof prisma.allocation.findMany>
-	>;
+	const getStudents = () =>
+		prisma.student.findMany({
+			orderBy: { studentNumber: 'asc' },
+			include: { user: { select: { name: true, email: true } } },
+		});
+
+	const getBeds = () =>
+		prisma.bed.findMany({
+			include: {
+				room: true,
+				allocations: {
+					where: { endDate: null },
+					select: { id: true },
+				},
+			},
+			orderBy: [
+				{ room: { building: 'asc' } },
+				{ room: { floor: 'asc' } },
+				{ bedNumber: 'asc' },
+			],
+		});
+
+	const getActiveAllocations = () =>
+		prisma.allocation.findMany({
+			where: { endDate: null },
+			orderBy: { startDate: 'desc' },
+			include: {
+				bed: { include: { room: true } },
+				student: { include: { user: true } },
+			},
+		});
+
+	const getAllocationHistory = () =>
+		prisma.allocation.findMany({
+			where: { endDate: { not: null } },
+			take: 20,
+			orderBy: { startDate: 'desc' },
+			include: {
+				bed: { include: { room: true } },
+				student: { include: { user: true } },
+			},
+		});
+
+	type StudentsResult = Awaited<ReturnType<typeof getStudents>>;
+	type BedsResult = Awaited<ReturnType<typeof getBeds>>;
+	type AllocationsResult = Awaited<ReturnType<typeof getActiveAllocations>>;
 
 	let students: StudentsResult = [];
 	let beds: BedsResult = [];
@@ -45,41 +86,10 @@ export default async function AllocationsPage() {
 
 	try {
 		[students, beds, activeAllocations, history] = await Promise.all([
-			prisma.student.findMany({
-				orderBy: { studentNumber: 'asc' },
-				include: { user: { select: { name: true, email: true } } },
-			}),
-			prisma.bed.findMany({
-				include: {
-					room: true,
-					allocations: {
-						where: { endDate: null },
-						select: { id: true },
-					},
-				},
-				orderBy: [
-					{ room: { building: 'asc' } },
-					{ room: { floor: 'asc' } },
-					{ bedNumber: 'asc' },
-				],
-			}),
-			prisma.allocation.findMany({
-				where: { endDate: null },
-				orderBy: { startDate: 'desc' },
-				include: {
-					bed: { include: { room: true } },
-					student: { include: { user: true } },
-				},
-			}),
-			prisma.allocation.findMany({
-				where: { endDate: { not: null } },
-				take: 20,
-				orderBy: { startDate: 'desc' },
-				include: {
-					bed: { include: { room: true } },
-					student: { include: { user: true } },
-				},
-			}),
+			getStudents(),
+			getBeds(),
+			getActiveAllocations(),
+			getAllocationHistory(),
 		]);
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
