@@ -2,13 +2,13 @@
 
 A modern, full-stack application built with Next.js, Prisma, and PostgreSQL for efficient hostel administration.
 
-![Dashboard Preview](public/screenshots/admin-dashboard.png)
+![Dashboard Preview](public/screenshots/admin-dashboard-dark-slate-purple-fixed-nav.png)
 
 ## Dashboard Screenshots
 
 ### Admin Overview
 
-![Admin Dashboard](public/screenshots/admin-dashboard.png)
+![Admin Dashboard](public/screenshots/admin-dashboard-dark-slate-purple-fixed-nav.png)
 
 ### Students
 
@@ -49,6 +49,15 @@ A modern, full-stack application built with Next.js, Prisma, and PostgreSQL for 
   - **Attendance**: Daily presence logs.
   - **Support Tickets**: Integrated maintenance and complaint ticketing system.
 - **Announcements**: Broadcast system for notices and updates.
+- **Unified Hover System**: A single global cursor-follow glow effect is applied consistently across cards, tables, controls, and dashboard modules.
+- **Theme Modes**: Two polished theme options are supported: `White` and `Violet Dark`.
+
+## 🎨 Theme & Interaction
+
+- Theme state is controlled at the root layout using `data-theme` on the `html` element.
+- `ThemeToggle` switches between `light` (white) and `dark-violet` only.
+- Global pointer-follow hover intensity is handled by `GlobalMouseFollow` and shared `.theme-mouse-follow` styles.
+- Competing hover overlays are neutralized so the UI always uses one consistent hover language.
 
 ## 🛠️ Setup & Installation
 
