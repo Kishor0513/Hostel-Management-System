@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { MessageSquare, Plus } from 'lucide-react';
 
 import { createComplaintTicket, updateComplaintStatus } from './actions';
 
@@ -27,10 +28,15 @@ export const dynamic = 'force-dynamic';
 export default async function ComplaintsPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	let staff: any[] = [];
-	let students: any[] = [];
-	let rooms: any[] = [];
-	let tickets: any[] = [];
+	type StaffResult = Awaited<ReturnType<typeof prisma.staff.findMany>>;
+	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
+	type RoomsResult = Awaited<ReturnType<typeof prisma.room.findMany>>;
+	type TicketsResult = Awaited<ReturnType<typeof prisma.complaintTicket.findMany>>;
+
+	let staff: StaffResult = [];
+	let students: StudentsResult = [];
+	let rooms: RoomsResult = [];
+	let tickets: TicketsResult = [];
 	let dataError: string | null = null;
 
 	try {
@@ -62,11 +68,52 @@ export default async function ComplaintsPage() {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
 
+	const open = tickets.filter((t) => t.status === 'OPEN').length;
+	const inProgress = tickets.filter((t) => t.status === 'IN_PROGRESS').length;
+	const resolved = tickets.filter((t) => t.status === 'RESOLVED').length;
+
 	return (
 		<div className="space-y-6">
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">Complaints</h1>
+					<p className="page-subtitle">Track and resolve student complaints.</p>
+				</div>
+			</div>
+
+			<div className="grid grid-cols-3 gap-4">
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-rose-500/20 text-rose-300">
+						<MessageSquare className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400">Open</div>
+						<div className="text-xl font-bold text-white">{open}</div>
+					</div>
+				</div>
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-amber-500/20 text-amber-300">
+						<MessageSquare className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400">In Progress</div>
+						<div className="text-xl font-bold text-white">{inProgress}</div>
+					</div>
+				</div>
+				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3">
+					<div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/20 text-emerald-300">
+						<MessageSquare className="h-4 w-4" />
+					</div>
+					<div>
+						<div className="text-xs text-slate-400">Resolved</div>
+						<div className="text-xl font-bold text-white">{resolved}</div>
+					</div>
+				</div>
+			</div>
+
 			{dataError ? (
-				<div className="rounded-lg border border-amber-600/50 bg-amber-500/10 p-4 text-sm text-amber-600">
-					{dataError}
+				<div className="flex items-center gap-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+					<span className="shrink-0">⚠</span> {dataError}
 				</div>
 			) : null}
 			<Card>
@@ -101,11 +148,7 @@ export default async function ComplaintsPage() {
 
 						<div className="space-y-2">
 							<Label htmlFor="studentId">Student (optional)</Label>
-							<select
-								id="studentId"
-								name="studentId"
-								className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
-							>
+							<select id="studentId" name="studentId" className="select-field">
 								<option value="">—</option>
 								{students.map((s) => (
 									<option
@@ -120,11 +163,7 @@ export default async function ComplaintsPage() {
 
 						<div className="space-y-2">
 							<Label htmlFor="roomId">Room (optional)</Label>
-							<select
-								id="roomId"
-								name="roomId"
-								className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
-							>
+							<select id="roomId" name="roomId" className="select-field">
 								<option value="">—</option>
 								{rooms.map((r) => (
 									<option
@@ -139,11 +178,7 @@ export default async function ComplaintsPage() {
 
 						<div className="space-y-2">
 							<Label htmlFor="assignedToStaffId">Assign Staff (optional)</Label>
-							<select
-								id="assignedToStaffId"
-								name="assignedToStaffId"
-								className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
-							>
+							<select id="assignedToStaffId" name="assignedToStaffId" className="select-field">
 								<option value="">—</option>
 								{staff.map((st) => (
 									<option
@@ -157,7 +192,10 @@ export default async function ComplaintsPage() {
 						</div>
 
 						<div className="lg:col-span-5 flex items-end justify-end">
-							<Button type="submit">Create Ticket</Button>
+							<Button type="submit" size="sm">
+							<Plus className="h-3.5 w-3.5" />
+							Create Ticket
+						</Button>
 						</div>
 					</form>
 				</CardContent>
@@ -177,7 +215,7 @@ export default async function ComplaintsPage() {
 								<TableHead>Ticket</TableHead>
 								<TableHead>Status</TableHead>
 								<TableHead>Assigned</TableHead>
-								<TableHead className="w-[260px]">Update</TableHead>
+								<TableHead className="w-65">Update</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -242,23 +280,13 @@ export default async function ComplaintsPage() {
 												value={t.id}
 											/>
 
-											<select
-												name="status"
-												defaultValue={t.status}
-												className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
-											>
+											<select name="status" defaultValue={t.status} className="select-field">
 												<option value="OPEN">OPEN</option>
 												<option value="IN_PROGRESS">IN_PROGRESS</option>
 												<option value="RESOLVED">RESOLVED</option>
 											</select>
 
-											<select
-												name="assignedToStaffId"
-												defaultValue={
-													t.assignedToStaff ? t.assignedToStaff.id : ''
-												}
-												className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
-											>
+											<select name="assignedToStaffId" defaultValue={t.assignedToStaff ? t.assignedToStaff.id : ''} className="select-field">
 												<option value="">—</option>
 												{staff.map((st) => (
 													<option
