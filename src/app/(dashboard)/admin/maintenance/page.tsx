@@ -35,12 +35,40 @@ export const dynamic = 'force-dynamic';
 export default async function MaintenancePage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type StaffResult = Awaited<ReturnType<typeof prisma.staff.findMany>>;
-	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
-	type RoomsResult = Awaited<ReturnType<typeof prisma.room.findMany>>;
-	type RequestsResult = Awaited<
-		ReturnType<typeof prisma.maintenanceRequest.findMany>
-	>;
+	const getStaff = () =>
+		prisma.staff.findMany({
+			orderBy: { staffCode: 'asc' },
+			include: { user: { select: { name: true, email: true } } },
+		});
+
+	const getStudents = () =>
+		prisma.student.findMany({
+			orderBy: { studentNumber: 'asc' },
+			include: { user: { select: { name: true } } },
+		});
+
+	const getRooms = () =>
+		prisma.room.findMany({
+			orderBy: [{ building: 'asc' }, { floor: 'asc' }, { roomNumber: 'asc' }],
+			select: { id: true, building: true, floor: true, roomNumber: true },
+		});
+
+	const getRequests = () =>
+		prisma.maintenanceRequest.findMany({
+			orderBy: { createdAt: 'desc' },
+			include: {
+				student: { include: { user: { select: { name: true } } } },
+				room: { select: { building: true, floor: true, roomNumber: true } },
+				assignedToStaff: { include: { user: { select: { name: true } } } },
+				logs: { orderBy: { changedAt: 'desc' }, take: 1 },
+			},
+			take: 20,
+		});
+
+	type StaffResult = Awaited<ReturnType<typeof getStaff>>;
+	type StudentsResult = Awaited<ReturnType<typeof getStudents>>;
+	type RoomsResult = Awaited<ReturnType<typeof getRooms>>;
+	type RequestsResult = Awaited<ReturnType<typeof getRequests>>;
 
 	let staff: StaffResult = [];
 	let students: StudentsResult = [];
@@ -50,28 +78,10 @@ export default async function MaintenancePage() {
 
 	try {
 		[staff, students, rooms, requests] = await Promise.all([
-			prisma.staff.findMany({
-				orderBy: { staffCode: 'asc' },
-				include: { user: { select: { name: true, email: true } } },
-			}),
-			prisma.student.findMany({
-				orderBy: { studentNumber: 'asc' },
-				include: { user: { select: { name: true } } },
-			}),
-			prisma.room.findMany({
-				orderBy: [{ building: 'asc' }, { floor: 'asc' }, { roomNumber: 'asc' }],
-				select: { id: true, building: true, floor: true, roomNumber: true },
-			}),
-			prisma.maintenanceRequest.findMany({
-				orderBy: { createdAt: 'desc' },
-				include: {
-					student: { include: { user: { select: { name: true } } } },
-					room: { select: { building: true, floor: true, roomNumber: true } },
-					assignedToStaff: { include: { user: { select: { name: true } } } },
-					logs: { orderBy: { changedAt: 'desc' }, take: 1 },
-				},
-				take: 20,
-			}),
+			getStaff(),
+			getStudents(),
+			getRooms(),
+			getRequests(),
 		]);
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
