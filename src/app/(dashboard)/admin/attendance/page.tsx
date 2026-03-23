@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Activity, Calendar, ClipboardCheck } from 'lucide-react';
 
 import { recordAttendance as recordAttendanceAction } from './actions';
 
@@ -27,12 +28,17 @@ export const dynamic = 'force-dynamic';
 export default async function AttendancePage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
+	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
+	type RecentResult = Awaited<
+		ReturnType<typeof prisma.attendanceRecord.findMany>
+	>;
+
 	const thirtyDaysAgo = new Date();
 	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-	let students: any[] = [];
-	let recent: any[] = [];
-	let attendanceForRate: any[] = [];
+	let students: StudentsResult = [];
+	let recent: RecentResult = [];
+	let attendanceForRate: RecentResult = [];
 	let dataError: string | null = null;
 
 	try {
@@ -66,31 +72,55 @@ export default async function AttendancePage() {
 
 	return (
 		<div className="space-y-6">
+			{/* Page Header */}
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">Attendance Tracking</h1>
+					<p className="page-subtitle">
+						Record and monitor daily student presence.
+					</p>
+				</div>
+				<Badge
+					variant={rate >= 0.8 ? 'success' : 'warning'}
+					className="h-fit"
+				>
+					Overall Rate: {(rate * 100).toFixed(1)}%
+				</Badge>
+			</div>
+
 			{dataError ? (
-				<div className="rounded-lg border border-amber-600/50 bg-amber-500/10 p-4 text-sm text-amber-600">
-					{dataError}
+				<div className="flex items-center gap-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+					<span className="shrink-0 text-base">⚠</span> {dataError}
 				</div>
 			) : null}
+
+			{/* Record Form */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Record Attendance</CardTitle>
-					<CardDescription>
-						Upserts based on `(studentId, date)`.
-					</CardDescription>
+					<div className="flex items-center gap-2">
+						<div className="grid h-8 w-8 place-items-center rounded-lg bg-rose-500/20 text-rose-300">
+							<ClipboardCheck className="h-4 w-4" />
+						</div>
+						<div>
+							<CardTitle>Record Attendance</CardTitle>
+							<CardDescription>Record daily attendance logs</CardDescription>
+						</div>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<form
 						action={recordAttendanceAction}
 						className="grid grid-cols-1 gap-4 lg:grid-cols-5"
 					>
-						<div className="space-y-2">
+						<div className="space-y-1.5 lg:col-span-2">
 							<Label htmlFor="studentId">Student</Label>
 							<select
 								id="studentId"
 								name="studentId"
 								required
-								className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
+								className="select-field"
 							>
+								<option value="">Select Student</option>
 								{students.map((s) => (
 									<option
 										key={s.id}
@@ -101,8 +131,7 @@ export default async function AttendancePage() {
 								))}
 							</select>
 						</div>
-
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="date">Date</Label>
 							<Input
 								id="date"
@@ -112,82 +141,100 @@ export default async function AttendancePage() {
 								required
 							/>
 						</div>
-
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<Label htmlFor="status">Status</Label>
 							<select
 								id="status"
 								name="status"
 								required
-								className="flex h-10 w-full rounded-lg border border-white/15 bg-white/5 px-3 text-sm outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
+								className="select-field"
 							>
 								<option value="PRESENT">Present</option>
 								<option value="ABSENT">Absent</option>
 							</select>
 						</div>
-
-						<div className="space-y-2">
+						<div className="space-y-1.5 lg:col-span-1">
 							<Label htmlFor="note">Note (optional)</Label>
 							<Input
 								id="note"
 								name="note"
-								placeholder="e.g. Medical leave"
+								placeholder="Remark..."
 							/>
 						</div>
-
-						<div className="lg:col-span-5 flex items-end justify-end">
-							<Button type="submit">Save Attendance</Button>
+						<div className="lg:col-span-5 flex justify-end">
+							<Button
+								type="submit"
+								className="bg-rose-600 hover:bg-rose-500 font-bold px-6 shadow-[0_10px_24px_rgba(225,29,72,0.3)]"
+							>
+								Save Attendance
+							</Button>
 						</div>
 					</form>
-
-					<div className="mt-4 flex flex-wrap gap-2">
-						<Badge variant={rate >= 0.8 ? 'success' : 'warning'}>
-							Attendance Rate (last 30 days): {(rate * 100).toFixed(1)}%
-						</Badge>
-					</div>
 				</CardContent>
 			</Card>
 
+			{/* History */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Recent Records</CardTitle>
-					<CardDescription>Latest attendance entries.</CardDescription>
+					<div className="flex items-center gap-2">
+						<div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-500/20 text-slate-300">
+							<Activity className="h-4 w-4" />
+						</div>
+						<div>
+							<CardTitle>Recent Records</CardTitle>
+							<CardDescription>Recent attendance history feed</CardDescription>
+						</div>
+					</div>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="p-0">
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Date</TableHead>
-								<TableHead>Student</TableHead>
-								<TableHead>Status</TableHead>
+								<TableHead>Date / Time</TableHead>
+								<TableHead>Student Details</TableHead>
+								<TableHead>Attendance Status</TableHead>
+								<TableHead className="w-45">Remarks</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{recent.map((r) => (
 								<TableRow key={r.id}>
-									<TableCell>{r.date.toISOString().slice(0, 10)}</TableCell>
-									<TableCell className="text-white/80">
-										{r.student?.user?.name}
-										<div className="text-xs text-white/60">
-											{r.student?.studentNumber}
+									<TableCell>
+										<div className="flex items-center gap-2 font-bold text-white/95 text-base tracking-tight">
+											<Calendar className="h-4 w-4 text-slate-500" />
+											{r.date.toISOString().slice(0, 10)}
+										</div>
+									</TableCell>
+									<TableCell>
+										<div className="space-y-0.5">
+											<div className="font-semibold text-white/90">
+												{r.student?.user?.name}
+											</div>
+											<div className="text-[0.65rem] text-slate-500 tracking-wider uppercase">
+												{r.student?.studentNumber}
+											</div>
 										</div>
 									</TableCell>
 									<TableCell>
 										<Badge
 											variant={r.status === 'PRESENT' ? 'success' : 'danger'}
+											className="px-3 py-0.5"
 										>
-											{r.status}
+											{r.status === 'PRESENT' ? 'PRESENT' : 'ABSENT'}
 										</Badge>
+									</TableCell>
+									<TableCell className="text-xs text-slate-400 italic">
+										{r.note || '— No remarks —'}
 									</TableCell>
 								</TableRow>
 							))}
 							{recent.length === 0 ? (
 								<TableRow>
-									<TableCell
-										colSpan={3}
-										className="text-white/60"
-									>
-										No attendance records yet.
+									<TableCell colSpan={4}>
+										<div className="data-empty">
+											<Activity className="data-empty-icon" />
+											<p>No records found. Start marking presence above.</p>
+										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
