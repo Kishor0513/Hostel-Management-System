@@ -30,18 +30,21 @@ export const dynamic = 'force-dynamic';
 export default async function StaffPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type StaffResult = Awaited<ReturnType<typeof prisma.staff.findMany>>;
-
-	let staff: StaffResult = [];
-	let dataError: string | null = null;
-
-	try {
-		staff = await prisma.staff.findMany({
+	const getStaff = () =>
+		prisma.staff.findMany({
 			orderBy: { staffCode: 'asc' },
 			include: {
 				user: { select: { id: true, name: true, email: true, role: true } },
 			},
 		});
+
+	type StaffResult = Awaited<ReturnType<typeof getStaff>>;
+
+	let staff: StaffResult = [];
+	let dataError: string | null = null;
+
+	try {
+		staff = await getStaff();
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
