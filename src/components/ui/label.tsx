@@ -3,6 +3,13 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
-  return <label className={cn("text-sm font-medium text-white/80", className)} {...props} />;
+  return (
+    <label
+      className={cn(
+        "text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
-
