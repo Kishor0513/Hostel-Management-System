@@ -28,16 +28,19 @@ export default async function EditStaffPage({
 }) {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type StaffResult = Awaited<ReturnType<typeof prisma.staff.findUnique>>;
+	const getStaff = (staffId: string) =>
+		prisma.staff.findUnique({
+			where: { id: staffId },
+			include: { user: true },
+		});
+
+	type StaffResult = Awaited<ReturnType<typeof getStaff>>;
 
 	let staff: StaffResult = null;
 	let dataError: string | null = null;
 
 	try {
-		staff = await prisma.staff.findUnique({
-			where: { id: params.staffId },
-			include: { user: true },
-		});
+		staff = await getStaff(params.staffId);
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
