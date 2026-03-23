@@ -28,7 +28,9 @@ export default async function EditRoomPage({
 }) {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	let room: any = null;
+	type RoomResult = Awaited<ReturnType<typeof prisma.room.findUnique>>;
+
+	let room: RoomResult = null;
 	let dataError: string | null = null;
 
 	try {
