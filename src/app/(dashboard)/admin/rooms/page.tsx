@@ -29,14 +29,8 @@ export const dynamic = 'force-dynamic';
 export default async function RoomsPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type RoomsResult = Awaited<ReturnType<typeof prisma.room.findMany>>;
-	type BedItem = RoomsResult[number]['beds'][number];
-
-	let rooms: RoomsResult = [];
-	let dataError: string | null = null;
-
-	try {
-		rooms = await prisma.room.findMany({
+	const getRooms = () =>
+		prisma.room.findMany({
 			orderBy: [{ building: 'asc' }, { floor: 'asc' }, { roomNumber: 'asc' }],
 			include: {
 				beds: {
@@ -49,6 +43,15 @@ export default async function RoomsPage() {
 				},
 			},
 		});
+
+	type RoomsResult = Awaited<ReturnType<typeof getRooms>>;
+	type BedItem = RoomsResult[number]['beds'][number];
+
+	let rooms: RoomsResult = [];
+	let dataError: string | null = null;
+
+	try {
+		rooms = await getRooms();
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
