@@ -7,7 +7,13 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
 		<input
 			{...props}
 			className={cn(
-				'flex h-11 w-full rounded-xl border border-slate-300/80 bg-white/75 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-200/60 dark:border-slate-500/50 dark:bg-slate-900/45 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-500 dark:focus:ring-sky-500/40',
+				'flex h-10 w-full rounded-xl border border-slate-200/80 bg-white/80 px-3.5 py-2 text-sm font-medium text-slate-900 shadow-sm outline-none transition-all duration-200',
+				'hover:border-[rgba(var(--nav-glow-main),0.45)] hover:shadow-[0_8px_22px_rgba(var(--nav-glow-main),0.18)]',
+				'placeholder:text-slate-400 placeholder:font-normal',
+				'focus:border-[rgba(var(--nav-glow-main),0.85)] focus:bg-white focus:ring-3 focus:ring-[rgba(var(--nav-glow-main),0.2)]',
+				'disabled:cursor-not-allowed disabled:opacity-50',
+				'dark:border-white/10 dark:bg-slate-800/80 dark:text-white dark:placeholder:text-slate-400',
+				'dark:hover:border-[rgba(var(--nav-glow-main),0.45)] dark:hover:shadow-[0_10px_26px_rgba(var(--nav-glow-main),0.22)] dark:focus:border-[rgba(var(--nav-glow-main),0.9)] dark:focus:bg-slate-800 dark:focus:ring-[rgba(var(--nav-glow-main),0.25)]',
 				props.className,
 			)}
 		/>
