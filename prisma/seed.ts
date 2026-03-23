@@ -1,8 +1,8 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { hash } from 'bcryptjs';
 import 'dotenv/config';
-import { PrismaClient } from '../src/generated/prisma/client.ts';
-import { UserRole } from '../src/generated/prisma/enums.ts';
+import { PrismaClient } from '../src/generated/prisma/client';
+import { UserRole } from '../src/generated/prisma/enums';
 
 const prisma = new PrismaClient({
 	adapter: new PrismaPg({
