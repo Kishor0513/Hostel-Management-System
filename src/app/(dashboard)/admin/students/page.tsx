@@ -30,13 +30,8 @@ export const dynamic = 'force-dynamic';
 export default async function StudentsPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
-
-	let students: StudentsResult = [];
-	let dataError: string | null = null;
-
-	try {
-		students = await prisma.student.findMany({
+	const getStudents = () =>
+		prisma.student.findMany({
 			orderBy: [{ studentNumber: 'asc' }],
 			include: {
 				user: { select: { id: true, name: true, email: true } },
@@ -54,6 +49,14 @@ export default async function StudentsPage() {
 				},
 			},
 		});
+
+	type StudentsResult = Awaited<ReturnType<typeof getStudents>>;
+
+	let students: StudentsResult = [];
+	let dataError: string | null = null;
+
+	try {
+		students = await getStudents();
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
