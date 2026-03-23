@@ -31,10 +31,16 @@ export const dynamic = 'force-dynamic';
 export default async function AllocationsPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	let students: any[] = [];
-	let beds: any[] = [];
-	let activeAllocations: any[] = [];
-	let history: any[] = [];
+	type StudentsResult = Awaited<ReturnType<typeof prisma.student.findMany>>;
+	type BedsResult = Awaited<ReturnType<typeof prisma.bed.findMany>>;
+	type AllocationsResult = Awaited<
+		ReturnType<typeof prisma.allocation.findMany>
+	>;
+
+	let students: StudentsResult = [];
+	let beds: BedsResult = [];
+	let activeAllocations: AllocationsResult = [];
+	let history: AllocationsResult = [];
 	let dataError: string | null = null;
 
 	try {
@@ -195,10 +201,10 @@ export default async function AllocationsPage() {
 							<TableRow>
 								<TableHead>Student</TableHead>
 								<TableHead>Room</TableHead>
-								<TableHead className="w-[140px]">Bed</TableHead>
-								<TableHead className="w-[140px]">Start</TableHead>
+								<TableHead className="w-35">Bed</TableHead>
+								<TableHead className="w-35">Start</TableHead>
 								<TableHead>Transfer Reason</TableHead>
-								<TableHead className="w-[160px]">Update</TableHead>
+								<TableHead className="w-40">Update</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -279,11 +285,11 @@ export default async function AllocationsPage() {
 							<TableRow>
 								<TableHead>Student</TableHead>
 								<TableHead>Room</TableHead>
-								<TableHead className="w-[140px]">Bed</TableHead>
-								<TableHead className="w-[140px]">Start</TableHead>
-								<TableHead className="w-[140px]">End</TableHead>
+								<TableHead className="w-35">Bed</TableHead>
+								<TableHead className="w-35">Start</TableHead>
+								<TableHead className="w-35">End</TableHead>
 								<TableHead>Reason</TableHead>
-								<TableHead className="w-[120px]">Delete</TableHead>
+								<TableHead className="w-30">Delete</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
