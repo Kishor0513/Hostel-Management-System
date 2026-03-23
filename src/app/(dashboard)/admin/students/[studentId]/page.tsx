@@ -28,14 +28,9 @@ export default async function EditStudentPage({
 }) {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	type StudentResult = Awaited<ReturnType<typeof prisma.student.findUnique>>;
-
-	let student: StudentResult = null;
-	let dataError: string | null = null;
-
-	try {
-		student = await prisma.student.findUnique({
-			where: { id: params.studentId },
+	const getStudent = (studentId: string) =>
+		prisma.student.findUnique({
+			where: { id: studentId },
 			include: {
 				user: true,
 				allocations: {
@@ -46,6 +41,14 @@ export default async function EditStudentPage({
 				},
 			},
 		});
+
+	type StudentResult = Awaited<ReturnType<typeof getStudent>>;
+
+	let student: StudentResult = null;
+	let dataError: string | null = null;
+
+	try {
+		student = await getStudent(params.studentId);
 	} catch {
 		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
 	}
