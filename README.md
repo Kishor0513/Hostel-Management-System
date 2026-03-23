@@ -38,6 +38,28 @@ A modern, full-stack application built with Next.js, Prisma, and PostgreSQL for 
 
 ![Announcements Dashboard](public/screenshots/announcements-dashboard.png)
 
+## Screenshot Links
+
+- [Admin Dashboard Dark (Fixed Nav)](public/screenshots/admin-dashboard-dark-slate-purple-fixed-nav.png)
+- [Admin Dashboard Dark](public/screenshots/admin-dashboard-dark-slate-purple.png)
+- [Admin Dashboard Tahoe Light v2](public/screenshots/admin-dashboard-tahoe-light-v2.png)
+- [Admin Dashboard Tahoe Light v3](public/screenshots/admin-dashboard-tahoe-light-v3.png)
+- [Admin Dashboard Tahoe Light v4](public/screenshots/admin-dashboard-tahoe-light-v4.png)
+- [Admin Dashboard Tahoe Light](public/screenshots/admin-dashboard-tahoe-light.png)
+- [Admin Dashboard Tahoe](public/screenshots/admin-dashboard-tahoe.png)
+- [Admin Dashboard](public/screenshots/admin-dashboard.png)
+- [Admin Settings Tahoe Light v2](public/screenshots/admin-settings-tahoe-light-v2.png)
+- [Admin Settings Tahoe Light v3](public/screenshots/admin-settings-tahoe-light-v3.png)
+- [Announcements Dashboard](public/screenshots/announcements-dashboard.png)
+- [Attendance Dashboard](public/screenshots/attendance-dashboard.png)
+- [Complaints Dashboard](public/screenshots/complaints-dashboard.png)
+- [Maintenance Dashboard](public/screenshots/maintenance-dashboard.png)
+- [Payments Dashboard](public/screenshots/payments-dashboard.png)
+- [Rooms Dashboard](public/screenshots/rooms-dashboard.png)
+- [Students Dashboard Tahoe Light](public/screenshots/students-dashboard-tahoe-light.png)
+- [Students Dashboard Tahoe](public/screenshots/students-dashboard-tahoe.png)
+- [Students Dashboard](public/screenshots/students-dashboard.png)
+
 ## 🚀 Key Features
 
 - **Premium Authentication**: Custom-built login portal with glassmorphism design and secure session management via NextAuth.
