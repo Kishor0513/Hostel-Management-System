@@ -8,12 +8,12 @@ import {
 	CartesianGrid,
 	Cell,
 	Legend,
+	Pie,
+	PieChart,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
 	YAxis,
-	Pie,
-	PieChart
 } from 'recharts';
 
 import ChartCard from './ChartCard';
@@ -40,8 +40,12 @@ export default function DashboardCharts({
 		{ name: 'Available', value: occupancy.available },
 	];
 
-	const COLORS = ['#34d399', '#fbbf24'];
-	const axisTick = { fill: 'rgba(226,232,240,0.9)', fontSize: 12, fontWeight: 500 };
+	const COLORS = ['#8b5cf6', '#a78bfa'];
+	const axisTick = {
+		fill: 'rgba(226,232,240,0.9)',
+		fontSize: 12,
+		fontWeight: 500,
+	};
 	const axisLine = { stroke: 'rgba(148,163,184,0.28)' };
 	const tooltipStyle = {
 		borderRadius: '12px',
@@ -103,12 +107,29 @@ export default function DashboardCharts({
 							margin={{ top: 6, right: 8, left: -14, bottom: 4 }}
 						>
 							<defs>
-								<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-									<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-									<stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+								<linearGradient
+									id="colorValue"
+									x1="0"
+									y1="0"
+									x2="0"
+									y2="1"
+								>
+									<stop
+										offset="5%"
+										stopColor="#8b5cf6"
+										stopOpacity={0.34}
+									/>
+									<stop
+										offset="95%"
+										stopColor="#8b5cf6"
+										stopOpacity={0}
+									/>
 								</linearGradient>
 							</defs>
-							<CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.14)" />
+							<CartesianGrid
+								strokeDasharray="3 3"
+								stroke="rgba(148,163,184,0.14)"
+							/>
 							<XAxis
 								dataKey="label"
 								tick={axisTick}
@@ -122,12 +143,15 @@ export default function DashboardCharts({
 							/>
 							<Tooltip
 								contentStyle={tooltipStyle}
-								formatter={(v: unknown) => [`$${Number(v).toLocaleString()}`, 'Revenue']}
+								formatter={(v: unknown) => [
+									`$${Number(v).toLocaleString()}`,
+									'Revenue',
+								]}
 							/>
 							<Area
 								type="monotone"
 								dataKey="value"
-								stroke="#3b82f6"
+								stroke="#8b5cf6"
 								strokeWidth={3}
 								fillOpacity={1}
 								fill="url(#colorValue)"
@@ -151,12 +175,29 @@ export default function DashboardCharts({
 							margin={{ top: 6, right: 8, left: -14, bottom: 4 }}
 						>
 							<defs>
-								<linearGradient id="colorAtt" x1="0" y1="0" x2="0" y2="1">
-									<stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-									<stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+								<linearGradient
+									id="colorAtt"
+									x1="0"
+									y1="0"
+									x2="0"
+									y2="1"
+								>
+									<stop
+										offset="5%"
+										stopColor="#a78bfa"
+										stopOpacity={0.32}
+									/>
+									<stop
+										offset="95%"
+										stopColor="#a78bfa"
+										stopOpacity={0}
+									/>
 								</linearGradient>
 							</defs>
-							<CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.14)" />
+							<CartesianGrid
+								strokeDasharray="3 3"
+								stroke="rgba(148,163,184,0.14)"
+							/>
 							<XAxis
 								dataKey="label"
 								tick={axisTick}
@@ -181,7 +222,7 @@ export default function DashboardCharts({
 							<Area
 								type="monotone"
 								dataKey="value"
-								stroke="#10b981"
+								stroke="#a78bfa"
 								strokeWidth={3}
 								fillOpacity={1}
 								fill="url(#colorAtt)"
@@ -204,7 +245,10 @@ export default function DashboardCharts({
 							data={ticketBarData}
 							margin={{ top: 6, right: 10, bottom: 4, left: -14 }}
 						>
-							<CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.14)" />
+							<CartesianGrid
+								strokeDasharray="3 3"
+								stroke="rgba(148,163,184,0.14)"
+							/>
 							<XAxis
 								dataKey="status"
 								tick={axisTick}
@@ -216,9 +260,7 @@ export default function DashboardCharts({
 								axisLine={axisLine}
 								tickLine={false}
 							/>
-							<Tooltip
-								contentStyle={tooltipStyle}
-							/>
+							<Tooltip contentStyle={tooltipStyle} />
 							<Legend
 								wrapperStyle={legendStyle}
 								verticalAlign="top"
@@ -228,14 +270,14 @@ export default function DashboardCharts({
 							<Bar
 								dataKey="maintenance"
 								name="Maintenance"
-								fill="#3b82f6"
+								fill="#8b5cf6"
 								radius={[6, 6, 0, 0]}
 								barSize={26}
 							/>
 							<Bar
 								dataKey="complaints"
 								name="Complaints"
-								fill="#f59e0b"
+								fill="#6366f1"
 								radius={[6, 6, 0, 0]}
 								barSize={26}
 							/>
