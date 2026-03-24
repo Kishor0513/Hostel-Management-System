@@ -70,7 +70,7 @@ export default function AdminTopNav() {
 	return (
 		<nav className="min-w-0 w-full">
 			<div
-				className="nav-rail-spotlight group/nav-rail flex w-full min-w-max items-center justify-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-2"
+				className="nav-rail-spotlight group/nav-rail flex w-full min-w-0 items-center justify-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-2"
 				onPointerMove={handleRailPointerMove}
 				onPointerLeave={handleRailPointerLeave}
 			>
