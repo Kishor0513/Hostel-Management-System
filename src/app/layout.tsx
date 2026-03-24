@@ -18,6 +18,25 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: 'Hostel Management System',
 	description: 'Hostel operations with charts, attendance, fees, and requests.',
+	applicationName: 'Hostel Management System',
+	themeColor: '#4f46e5',
+	icons: {
+		icon: [
+			{ url: '/favicon.ico' },
+			{ url: '/icon.png', type: 'image/png' },
+		],
+		apple: [{ url: '/apple-icon.png', type: 'image/png' }],
+	},
+	openGraph: {
+		title: 'Hostel Management System',
+		description: 'Hostel operations with charts, attendance, fees, and requests.',
+		type: 'website',
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: 'Hostel Management System',
+		description: 'Hostel operations with charts, attendance, fees, and requests.',
+	},
 };
 
 export default function RootLayout({
