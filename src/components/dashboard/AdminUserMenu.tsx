@@ -51,7 +51,7 @@ export default function AdminUserMenu({ name, role }: AdminUserMenuProps) {
 
 	return (
 		<div
-			className="relative z-60"
+			className="relative z-60 h-10 w-10 flex-none"
 			ref={menuRef}
 		>
 			<button
