@@ -2,63 +2,97 @@
 
 A modern, full-stack application built with Next.js, Prisma, and PostgreSQL for efficient hostel administration.
 
-![Dashboard Preview](public/screenshots/admin-dashboard-dark-slate-purple-fixed-nav.png)
+![Dashboard Preview](public/screenshots/admin-dashboard-current.png)
 
-## Dashboard Screenshots
+> **Note:** Animations and charts fully load with 3-10 second delays for optimal visual presentation.
+
+## Dashboard Screenshots (Current Build)
 
 ### Admin Overview
 
-![Admin Dashboard](public/screenshots/admin-dashboard-dark-slate-purple-fixed-nav.png)
+![Admin Dashboard](public/screenshots/admin-dashboard-current.png)
 
-### Students
+### Students Management
 
-![Students Dashboard](public/screenshots/students-dashboard.png)
+![Students Dashboard](public/screenshots/students-dashboard-current.png)
 
-### Rooms and Beds
+### Rooms & Beds Management
 
-![Rooms Dashboard](public/screenshots/rooms-dashboard.png)
+![Rooms Dashboard](public/screenshots/rooms-dashboard-current.png)
 
-### Payments
+### Payments & Billing
 
-![Payments Dashboard](public/screenshots/payments-dashboard.png)
+![Payments Dashboard](public/screenshots/payments-dashboard-current.png)
 
-### Attendance
+### Attendance Tracking
 
-![Attendance Dashboard](public/screenshots/attendance-dashboard.png)
+![Attendance Dashboard](public/screenshots/attendance-dashboard-current.png)
 
-### Maintenance
+### Maintenance Requests
 
-![Maintenance Dashboard](public/screenshots/maintenance-dashboard.png)
+![Maintenance Dashboard](public/screenshots/maintenance-dashboard-current.png)
 
-### Complaints
+### Complaint Ticketing
 
-![Complaints Dashboard](public/screenshots/complaints-dashboard.png)
+![Complaints Dashboard](public/screenshots/complaints-dashboard-current.png)
 
 ### Announcements
 
-![Announcements Dashboard](public/screenshots/announcements-dashboard.png)
+![Announcements Dashboard](public/screenshots/announcements-dashboard-current.png)
 
-## Screenshot Links
+### Staff Management
 
-- [Admin Dashboard Dark (Fixed Nav)](public/screenshots/admin-dashboard-dark-slate-purple-fixed-nav.png)
-- [Admin Dashboard Dark](public/screenshots/admin-dashboard-dark-slate-purple.png)
-- [Admin Dashboard Tahoe Light v2](public/screenshots/admin-dashboard-tahoe-light-v2.png)
-- [Admin Dashboard Tahoe Light v3](public/screenshots/admin-dashboard-tahoe-light-v3.png)
-- [Admin Dashboard Tahoe Light v4](public/screenshots/admin-dashboard-tahoe-light-v4.png)
-- [Admin Dashboard Tahoe Light](public/screenshots/admin-dashboard-tahoe-light.png)
-- [Admin Dashboard Tahoe](public/screenshots/admin-dashboard-tahoe.png)
-- [Admin Dashboard](public/screenshots/admin-dashboard.png)
-- [Admin Settings Tahoe Light v2](public/screenshots/admin-settings-tahoe-light-v2.png)
-- [Admin Settings Tahoe Light v3](public/screenshots/admin-settings-tahoe-light-v3.png)
-- [Announcements Dashboard](public/screenshots/announcements-dashboard.png)
-- [Attendance Dashboard](public/screenshots/attendance-dashboard.png)
-- [Complaints Dashboard](public/screenshots/complaints-dashboard.png)
-- [Maintenance Dashboard](public/screenshots/maintenance-dashboard.png)
-- [Payments Dashboard](public/screenshots/payments-dashboard.png)
-- [Rooms Dashboard](public/screenshots/rooms-dashboard.png)
-- [Students Dashboard Tahoe Light](public/screenshots/students-dashboard-tahoe-light.png)
-- [Students Dashboard Tahoe](public/screenshots/students-dashboard-tahoe.png)
-- [Students Dashboard](public/screenshots/students-dashboard.png)
+![Staff Dashboard](public/screenshots/staff-dashboard-current.png)
+
+### Bed Allocations
+
+![Allocations Dashboard](public/screenshots/allocations-dashboard-current.png)
+
+### Account Management
+
+![Account Management](public/screenshots/manage-accounts-dashboard-current.png)
+
+### Admin Settings
+
+![Admin Settings](public/screenshots/admin-settings-current.png)
+
+## Dashboard Route Coverage
+
+This project includes the following dashboard pages under `src/app/(dashboard)`. Existing screenshots are mapped below.
+
+| Route                         | Screenshot                              |
+| ----------------------------- | --------------------------------------- |
+| `/admin`                      | `admin-dashboard-current.png`           |
+| `/admin/allocations`          | `allocations-dashboard-current.png`     |
+| `/admin/announcements`        | `announcements-dashboard-current.png`   |
+| `/admin/attendance`           | `attendance-dashboard-current.png`      |
+| `/admin/complaints`           | `complaints-dashboard-current.png`      |
+| `/admin/maintenance`          | `maintenance-dashboard-current.png`     |
+| `/admin/manage-accounts`      | `manage-accounts-dashboard-current.png` |
+| `/admin/payments`             | `payments-dashboard-current.png`        |
+| `/admin/rooms`                | `rooms-dashboard-current.png`           |
+| `/admin/rooms/[roomId]`       | `rooms-dashboard-current.png`           |
+| `/admin/settings`             | `admin-settings-current.png`            |
+| `/admin/staff`                | `staff-dashboard-current.png`           |
+| `/admin/staff/[staffId]`      | `staff-dashboard-current.png`           |
+| `/admin/students`             | `students-dashboard-current.png`        |
+| `/admin/students/[studentId]` | `students-dashboard-current.png`        |
+| `/announcements`              | `announcements-dashboard-current.png`   |
+
+## Screenshot Files (Current)
+
+- [Admin Dashboard](public/screenshots/admin-dashboard-current.png)
+- [Students Dashboard](public/screenshots/students-dashboard-current.png)
+- [Rooms Dashboard](public/screenshots/rooms-dashboard-current.png)
+- [Payments Dashboard](public/screenshots/payments-dashboard-current.png)
+- [Attendance Dashboard](public/screenshots/attendance-dashboard-current.png)
+- [Maintenance Dashboard](public/screenshots/maintenance-dashboard-current.png)
+- [Complaints Dashboard](public/screenshots/complaints-dashboard-current.png)
+- [Announcements Dashboard](public/screenshots/announcements-dashboard-current.png)
+- [Staff Dashboard](public/screenshots/staff-dashboard-current.png)
+- [Allocations Dashboard](public/screenshots/allocations-dashboard-current.png)
+- [Account Management](public/screenshots/manage-accounts-dashboard-current.png)
+- [Admin Settings](public/screenshots/admin-settings-current.png)
 
 ## 🚀 Key Features
 
