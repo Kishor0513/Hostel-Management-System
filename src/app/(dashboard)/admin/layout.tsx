@@ -28,7 +28,7 @@ export default async function AdminLayout({
 
 			<div className="fixed top-0 left-0 right-0 z-40 w-full pointer-events-none">
 				<div className="mx-auto w-full max-w-350 px-4 lg:px-6">
-					<header className="nav-rail-spotlight mt-4 w-full rounded-2xl bg-slate-950/70 px-5 py-3.5 shadow-[0_20px_50px_rgba(10,7,21,0.6)] backdrop-blur-2xl pointer-events-auto lg:px-6">
+					<header className="nav-rail-spotlight mt-4 w-full overflow-visible rounded-2xl bg-slate-950/70 px-5 py-3.5 shadow-[0_20px_50px_rgba(10,7,21,0.6)] backdrop-blur-2xl pointer-events-auto lg:px-6">
 						<div className="flex items-center gap-4">
 							<Link
 								href="/admin"
@@ -51,7 +51,7 @@ export default async function AdminLayout({
 								<AdminTopNav />
 							</div>
 
-							<div className="relative z-50">
+							<div className="relative z-50 shrink-0">
 								<AdminUserMenu
 									name={user.name}
 									role={user.role}
