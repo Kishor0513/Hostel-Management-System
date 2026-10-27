@@ -29,9 +29,9 @@ export default async function AnnouncementsPage() {
 			take: 30,
 			select: { id: true, title: true, content: true, publishedAt: true },
 		});
-	} catch {
-		dataError =
-			'Database connection failed. Check DATABASE_URL in .env to load announcements.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load announcements. Please try again.';
 	}
 
 	return (

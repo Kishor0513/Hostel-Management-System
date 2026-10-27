@@ -52,8 +52,9 @@ export default async function RoomsPage() {
 
 	try {
 		rooms = await getRooms();
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	const totalBeds = rooms.reduce((sum, r) => sum + r.beds.length, 0);

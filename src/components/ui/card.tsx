@@ -2,9 +2,19 @@
 
 import { motion, useMotionTemplate, useMotionValue } from 'framer-motion';
 import * as React from 'react';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import { cn } from '@/lib/utils';
+
+const emptySubscribe = () => () => {};
+
+function useIsClient() {
+	return useSyncExternalStore(
+		emptySubscribe,
+		() => true,
+		() => false,
+	);
+}
 
 export function Card({
 	className,
@@ -12,7 +22,7 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement>) {
 	const mouseX = useMotionValue(0);
 	const mouseY = useMotionValue(0);
-	const [isMounted, setIsMounted] = useState(false);
+	const isMounted = useIsClient();
 	const glowBackground = useMotionTemplate`
 		radial-gradient(
 			220px circle at ${mouseX}px ${mouseY}px,
@@ -22,10 +32,6 @@ export function Card({
 			transparent 78%
 		)
 	`;
-
-	useEffect(() => {
-		setIsMounted(true);
-	}, []);
 
 	function handleMouseMove({
 		currentTarget,

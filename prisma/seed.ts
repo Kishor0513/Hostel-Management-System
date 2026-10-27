@@ -13,12 +13,15 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-	const adminPasswordHash = await hash('admin123', 10);
-	const staffPasswordHash = await hash('staff123', 10);
-	const studentPasswordHash = await hash('student123', 10);
+	const adminPasswordHash = await hash('admin123', 12);
+	const staffPasswordHash = await hash('staff123', 12);
+	const studentPasswordHash = await hash('student123', 12);
 
 	console.log('Cleaning up database...');
 	await prisma.$transaction(async (tx) => {
+		await tx.auditLog.deleteMany();
+		await tx.loginAttempt.deleteMany();
+		await tx.appSetting.deleteMany();
 		await tx.maintenanceLog.deleteMany();
 		await tx.complaintLog.deleteMany();
 		await tx.maintenanceRequest.deleteMany();
@@ -76,6 +79,17 @@ async function main() {
 			},
 		},
 		include: { user: true },
+	});
+
+	// Used by the smoke test to verify that deactivated accounts cannot sign in.
+	await prisma.user.create({
+		data: {
+			email: 'inactive@student.local',
+			name: 'Inactive Student',
+			passwordHash: studentPasswordHash,
+			role: UserRole.STUDENT,
+			isActive: false,
+		},
 	});
 
 	console.log('Creating rooms and beds...');

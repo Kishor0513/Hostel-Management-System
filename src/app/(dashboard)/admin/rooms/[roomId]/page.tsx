@@ -50,8 +50,9 @@ export default async function EditRoomPage({
 
 	try {
 		room = await getRoom(params.roomId);
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	if (dataError) {

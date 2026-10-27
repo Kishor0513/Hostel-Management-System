@@ -15,12 +15,22 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
-type AdminUserMenuProps = {
+type UserMenuProps = {
 	name?: string | null;
 	role: string;
 };
 
-export default function AdminUserMenu({ name, role }: AdminUserMenuProps) {
+export default function UserMenu({ name, role }: UserMenuProps) {
+	const isStudent = role === 'STUDENT';
+	const canOpenSettings = role === 'ADMIN';
+	const profileHref = isStudent ? '/student/profile' : '/admin/manage-accounts';
+	const attendanceHref = isStudent ? '/student/attendance' : '/admin/attendance';
+	const announcementsHref = isStudent
+		? '/student/announcements'
+		: role === 'ADMIN'
+			? '/admin/announcements'
+			: '/announcements';
+
 	const [open, setOpen] = useState(false);
 	const [submenuOpen, setSubmenuOpen] = useState<string | null>(null);
 	const menuRef = useRef<HTMLDivElement>(null);
@@ -116,7 +126,7 @@ export default function AdminUserMenu({ name, role }: AdminUserMenuProps) {
 							Account
 						</p>
 						<Link
-							href="/admin/manage-accounts"
+							href={profileHref}
 							onClick={() => {
 								setOpen(false);
 								setSubmenuOpen(null);
@@ -127,74 +137,76 @@ export default function AdminUserMenu({ name, role }: AdminUserMenuProps) {
 							<UserIcon className="h-4 w-4 text-rose-400" />
 							Profile
 						</Link>
-						<Link
-							href="/admin/manage-accounts"
-							onClick={() => {
-								setOpen(false);
-								setSubmenuOpen(null);
-							}}
-							role="menuitem"
-							className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-slate-200 transition-all duration-300 group-hover/user-menu:opacity-60 hover:opacity-100! hover:bg-white/10"
-						>
-							<Settings className="h-4 w-4 text-slate-400" />
-							Settings
-						</Link>
+						{canOpenSettings ? (
+							<Link
+								href="/admin/settings"
+								onClick={() => {
+									setOpen(false);
+									setSubmenuOpen(null);
+								}}
+								role="menuitem"
+								className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-slate-200 transition-all duration-300 group-hover/user-menu:opacity-60 hover:opacity-100! hover:bg-white/10"
+							>
+								<Settings className="h-4 w-4 text-slate-400" />
+								Settings
+							</Link>
+						) : null}
 					</div>
 
-					{/* System Management Section */}
-					<div className="mt-3 space-y-1">
-						<p className="px-2.5 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500">
-							System
-						</p>
-						<button
-							type="button"
-							onClick={() =>
-								setSubmenuOpen(submenuOpen === 'system' ? null : 'system')
-							}
-							role="menuitem"
-							className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-sm font-semibold text-slate-200 transition-all duration-300 group-hover/user-menu:opacity-60 hover:opacity-100! hover:bg-white/10"
-						>
-							<div className="flex items-center gap-2">
-								<ExternalLink className="h-4 w-4 text-sky-400" />
-								Management
-							</div>
-							<ChevronRight
-								className={`h-4 w-4 transition-transform ${
-									submenuOpen === 'system' ? 'rotate-90' : ''
-								}`}
-							/>
-						</button>
+					{!isStudent ? (
+						<div className="mt-3 space-y-1">
+							<p className="px-2.5 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500">
+								System
+							</p>
+							<button
+								type="button"
+								onClick={() =>
+									setSubmenuOpen(submenuOpen === 'system' ? null : 'system')
+								}
+								role="menuitem"
+								className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-sm font-semibold text-slate-200 transition-all duration-300 group-hover/user-menu:opacity-60 hover:opacity-100! hover:bg-white/10"
+							>
+								<div className="flex items-center gap-2">
+									<ExternalLink className="h-4 w-4 text-sky-400" />
+									Management
+								</div>
+								<ChevronRight
+									className={`h-4 w-4 transition-transform ${
+										submenuOpen === 'system' ? 'rotate-90' : ''
+									}`}
+								/>
+							</button>
 
-						{/* System Submenu */}
-						{submenuOpen === 'system' && (
-							<div className="space-y-1 bg-white/5 rounded-lg p-2 mt-1 mx-1.5 border border-white/5">
-								<Link
-									href="/admin/announcements"
-									onClick={() => {
-										setOpen(false);
-										setSubmenuOpen(null);
-									}}
-									role="menuitem"
-									className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-bold uppercase tracking-wider text-slate-300 transition-all duration-300 hover:text-white hover:bg-white/5"
-								>
-									<Bell className="h-3.5 w-3.5 text-amber-400" />
-									Announcements
-								</Link>
-								<Link
-									href="/admin/attendance"
-									onClick={() => {
-										setOpen(false);
-										setSubmenuOpen(null);
-									}}
-									role="menuitem"
-									className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-bold uppercase tracking-wider text-slate-300 transition-all duration-300 hover:text-white hover:bg-white/5"
-								>
-									<Clock className="h-3.5 w-3.5 text-cyan-400" />
-									Attendance
-								</Link>
-							</div>
-						)}
-					</div>
+							{submenuOpen === 'system' && (
+								<div className="mt-1 mx-1.5 space-y-1 rounded-lg border border-white/5 bg-white/5 p-2">
+									<Link
+										href={announcementsHref}
+										onClick={() => {
+											setOpen(false);
+											setSubmenuOpen(null);
+										}}
+										role="menuitem"
+										className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-bold uppercase tracking-wider text-slate-300 transition-all duration-300 hover:bg-white/5 hover:text-white"
+									>
+										<Bell className="h-3.5 w-3.5 text-amber-400" />
+										Announcements
+									</Link>
+									<Link
+										href={attendanceHref}
+										onClick={() => {
+											setOpen(false);
+											setSubmenuOpen(null);
+										}}
+										role="menuitem"
+										className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-bold uppercase tracking-wider text-slate-300 transition-all duration-300 hover:bg-white/5 hover:text-white"
+									>
+										<Clock className="h-3.5 w-3.5 text-cyan-400" />
+										Attendance
+									</Link>
+								</div>
+							)}
+						</div>
+					) : null}
 
 					{/* Logout */}
 					<div className="mt-3 border-t border-white/10 pt-2">

@@ -26,7 +26,7 @@ export default async function EditStaffPage({
 }: {
 	params: { staffId: string };
 }) {
-	await requireRole(['ADMIN', 'STAFF']);
+	await requireRole(['ADMIN']);
 
 	const getStaff = (staffId: string) =>
 		prisma.staff.findUnique({
@@ -41,8 +41,9 @@ export default async function EditStaffPage({
 
 	try {
 		staff = await getStaff(params.staffId);
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	if (dataError) {
@@ -175,8 +176,12 @@ export default async function EditStaffPage({
 									variant="destructive"
 									className="w-full"
 								>
-									Delete Staff
+									Deactivate Staff
 								</Button>
+								<p className="mt-2 text-xs text-slate-500">
+									The account can no longer sign in. Assigned open tickets are
+									unassigned and history is preserved.
+								</p>
 							</form>
 						</div>
 					</CardContent>

@@ -1,5 +1,6 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { Toaster } from 'sonner';
 
 import GlobalMouseFollow from '@/components/effects/GlobalMouseFollow';
 
@@ -16,10 +17,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+	metadataBase: new URL(process.env.NEXTAUTH_URL ?? 'http://localhost:3000'),
 	title: 'Hostel Management System',
 	description: 'Hostel operations with charts, attendance, fees, and requests.',
 	applicationName: 'Hostel Management System',
-	themeColor: '#4f46e5',
 	icons: {
 		icon: [
 			{ url: '/favicon.ico' },
@@ -39,6 +40,10 @@ export const metadata: Metadata = {
 	},
 };
 
+export const viewport: Viewport = {
+	themeColor: '#4f46e5',
+};
+
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -53,6 +58,10 @@ export default function RootLayout({
 			<body className="min-h-full flex flex-col bg-(--background)">
 				<GlobalMouseFollow />
 				{children}
+				<Toaster
+					richColors
+					position="top-right"
+				/>
 			</body>
 		</html>
 	);

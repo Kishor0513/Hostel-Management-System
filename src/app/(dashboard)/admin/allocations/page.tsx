@@ -33,6 +33,7 @@ export default async function AllocationsPage() {
 
 	const getStudents = () =>
 		prisma.student.findMany({
+			where: { user: { isActive: true } },
 			orderBy: { studentNumber: 'asc' },
 			include: { user: { select: { name: true, email: true } } },
 		});
@@ -91,8 +92,9 @@ export default async function AllocationsPage() {
 			getActiveAllocations(),
 			getAllocationHistory(),
 		]);
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	const availableBedsCount = beds.filter(

@@ -1,9 +1,20 @@
 import { Suspense } from 'react';
 import Image from 'next/image';
+import { redirect } from 'next/navigation';
 
 import LoginForm from '@/components/auth/LoginForm';
+import { getSessionUser } from '@/lib/auth';
+import { getRoleHome } from '@/lib/roles';
 
-export default function LoginPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function LoginPage() {
+	const user = await getSessionUser();
+
+	if (user) {
+		redirect(getRoleHome(user.role));
+	}
+
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-[#020617] relative overflow-hidden">
 			{/* Animated Background Elements */}

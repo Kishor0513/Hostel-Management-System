@@ -49,8 +49,9 @@ export default async function EditStudentPage({
 
 	try {
 		student = await getStudent(params.studentId);
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	if (dataError) {
@@ -197,8 +198,12 @@ export default async function EditStudentPage({
 									variant="destructive"
 									className="w-full"
 								>
-									Delete Student
+									Deactivate Student
 								</Button>
+								<p className="mt-2 text-xs text-slate-500">
+									The account can no longer sign in. Rooms, invoices, and
+									history are preserved.
+								</p>
 							</form>
 						</div>
 					</CardContent>

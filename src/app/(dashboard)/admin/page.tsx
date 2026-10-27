@@ -1,8 +1,10 @@
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import KpiCard from '@/components/dashboard/KpiCard';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { requireRole } from '@/lib/auth';
+import { formatMoney } from '@/lib/format';
 import { prisma } from '@/lib/prisma';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,10 +24,6 @@ type DashboardData = {
 	}>;
 	dataError: string | null;
 };
-
-function formatMoney(n: number) {
-	return n.toFixed(2);
-}
 
 function getEmptyDashboardData(): DashboardData {
 	const now = new Date();
@@ -201,11 +199,11 @@ async function loadDashboardData(): Promise<DashboardData> {
 			ticketBarData,
 			dataError: null,
 		};
-	} catch {
+	} catch (error) {
+		console.error('[page] failed to load data', error);
 		return {
 			...fallback,
-			dataError:
-				'Database connection failed. Check DATABASE_URL in .env to load live dashboard data.',
+			dataError: 'Could not load live dashboard data. Please try again.',
 		};
 	}
 }
@@ -233,15 +231,25 @@ export default async function AdminDashboardPage() {
 					</div>
 
 					<div className="flex flex-wrap items-center gap-2">
-						<Button
-							variant="secondary"
-							className="h-9 border-white/12 bg-white/10 text-slate-100 hover:bg-white/15"
+						<Link
+							href="/api/admin/reports/export"
+							className={buttonVariants({
+								variant: 'secondary',
+								className:
+									'h-9 border-white/12 bg-white/10 text-slate-100 hover:bg-white/15',
+							})}
 						>
 							Export Report
-						</Button>
-						<Button className="h-9 bg-sky-500 text-white shadow-[0_10px_24px_rgba(2,132,199,0.34)] hover:bg-sky-400">
+						</Link>
+						<Link
+							href="/admin/announcements"
+							className={buttonVariants({
+								className:
+									'h-9 bg-sky-500 text-white shadow-[0_10px_24px_rgba(2,132,199,0.34)] hover:bg-sky-400',
+							})}
+						>
 							Create Announcement
-						</Button>
+						</Link>
 					</div>
 				</div>
 

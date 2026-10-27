@@ -1,5 +1,9 @@
+import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
+
 import type { UserRole } from '@/generated/prisma/enums';
-import { cookies } from 'next/headers';
+import { authOptions } from '@/lib/auth-options';
+import { prisma } from '@/lib/prisma';
 
 export type SessionUser = {
 	id: string;
@@ -8,84 +12,48 @@ export type SessionUser = {
 	role: UserRole;
 };
 
-const SESSION_USER_COOKIE = 'hms-local-session-user';
-const SESSION_PASSWORD_COOKIE = 'hms-local-session-password-hash';
+/**
+ * Resolves the authenticated user from the NextAuth session and re-reads the
+ * authoritative role/profile from PostgreSQL. The JWT is only used to identify
+ * the user; authorization decisions always use current database state.
+ */
+export async function getSessionUser(): Promise<SessionUser | null> {
+	const session = await getServerSession(authOptions);
+	const userId = session?.user?.id;
 
-const DEFAULT_SESSION_USER: SessionUser = {
-	id: 'local-user',
-	email: 'local@hostel.local',
-	name: 'Local User',
-	role: 'ADMIN',
-};
-
-function parseRole(value: unknown): UserRole | null {
-	if (value === 'ADMIN' || value === 'STAFF' || value === 'STUDENT') {
-		return value;
-	}
-
-	return null;
-}
-
-async function readSessionUserFromCookie(): Promise<SessionUser | null> {
-	const cookieStore = await cookies();
-	const raw = cookieStore.get(SESSION_USER_COOKIE)?.value;
-
-	if (!raw) {
+	if (!userId) {
 		return null;
 	}
 
-	try {
-		const parsed = JSON.parse(raw) as Partial<SessionUser>;
-		const role = parseRole(parsed.role);
+	const user = await prisma.user.findUnique({
+		where: { id: userId },
+		select: { id: true, email: true, name: true, role: true, isActive: true },
+	});
 
-		if (!parsed.id || !parsed.email || !parsed.name || !role) {
-			return null;
-		}
-
-		return {
-			id: parsed.id,
-			email: parsed.email,
-			name: parsed.name,
-			role,
-		};
-	} catch {
+	if (!user || !user.isActive) {
 		return null;
 	}
+
+	return {
+		id: user.id,
+		email: user.email,
+		name: user.name,
+		role: user.role,
+	};
 }
 
-export async function getSessionUser(): Promise<SessionUser> {
-	// Auth is disabled: use cookie-backed local user for app-level role checks.
-	const fromCookie = await readSessionUserFromCookie();
-	return fromCookie ?? DEFAULT_SESSION_USER;
-}
-
-export async function saveSessionUser(user: SessionUser) {
-	const cookieStore = await cookies();
-	cookieStore.set(SESSION_USER_COOKIE, JSON.stringify(user), {
-		httpOnly: true,
-		sameSite: 'lax',
-		path: '/',
-		maxAge: 60 * 60 * 24 * 365,
-	});
-}
-
-export async function saveSessionPasswordHash(passwordHash: string) {
-	const cookieStore = await cookies();
-	cookieStore.set(SESSION_PASSWORD_COOKIE, passwordHash, {
-		httpOnly: true,
-		sameSite: 'lax',
-		path: '/',
-		maxAge: 60 * 60 * 24 * 365,
-	});
-}
-
-export async function requireRole(allowedRoles: UserRole[]) {
+export async function requireRole(
+	allowedRoles: UserRole[] | readonly UserRole[],
+): Promise<SessionUser> {
 	const user = await getSessionUser();
-	if (!allowedRoles.includes(user.role)) {
-		return {
-			...user,
-			role: allowedRoles[0],
-		};
+
+	if (!user) {
+		redirect('/login');
 	}
+
+	if (!allowedRoles.includes(user.role)) {
+		redirect('/forbidden');
+	}
+
 	return user;
 }

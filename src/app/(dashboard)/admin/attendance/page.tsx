@@ -68,8 +68,9 @@ export default async function AttendancePage() {
 			getRecent(),
 			getAttendanceForRate(thirtyDaysAgo),
 		]);
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	const presentCount = attendanceForRate.filter(

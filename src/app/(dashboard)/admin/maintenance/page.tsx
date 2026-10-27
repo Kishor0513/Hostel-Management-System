@@ -37,12 +37,14 @@ export default async function MaintenancePage() {
 
 	const getStaff = () =>
 		prisma.staff.findMany({
+			where: { user: { isActive: true } },
 			orderBy: { staffCode: 'asc' },
 			include: { user: { select: { name: true, email: true } } },
 		});
 
 	const getStudents = () =>
 		prisma.student.findMany({
+			where: { user: { isActive: true } },
 			orderBy: { studentNumber: 'asc' },
 			include: { user: { select: { name: true } } },
 		});
@@ -83,8 +85,9 @@ export default async function MaintenancePage() {
 			getRooms(),
 			getRequests(),
 		]);
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	const pendingCount = requests.filter((r) => r.status !== 'DONE').length;

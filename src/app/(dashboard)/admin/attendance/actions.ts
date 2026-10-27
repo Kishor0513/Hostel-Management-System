@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit";
 import type { UserRole } from "@/generated/prisma/enums";
 import type { AttendanceStatus } from "@/generated/prisma/enums";
 
@@ -15,11 +16,11 @@ const attendanceSchema = z.object({
   studentId: z.string().min(1),
   date: z.string().min(1),
   status: z.enum(["PRESENT", "ABSENT"]),
-  note: z.string().optional().nullable(),
+  note: z.string().trim().max(500).optional().nullable(),
 });
 
 export async function recordAttendance(formData: FormData) {
-  await requireRole(allowedRoles);
+  const actor = await requireRole(allowedRoles);
 
   const parsed = attendanceSchema.safeParse({
     studentId: formData.get("studentId"),
@@ -27,30 +28,46 @@ export async function recordAttendance(formData: FormData) {
     status: formData.get("status"),
     note: formData.get("note"),
   });
-  if (!parsed.success) redirect("/admin/attendance");
+  if (!parsed.success) redirect("/admin/attendance?error=invalid");
 
   const { studentId, date, status, note } = parsed.data;
+  const recordDate = new Date(date);
 
-  await prisma.attendanceRecord.upsert({
+  if (
+    Number.isNaN(recordDate.getTime()) ||
+    recordDate.getTime() > Date.now() + 24 * 60 * 60 * 1000
+  ) {
+    redirect("/admin/attendance?error=date");
+  }
+
+  const record = await prisma.attendanceRecord.upsert({
     where: {
       studentId_date: {
         studentId,
-        date: new Date(date),
+        date: recordDate,
       },
     },
     update: {
       status: status as AttendanceStatus,
-      note: note?.trim() || null,
+      note: note || null,
     },
     create: {
       studentId,
-      date: new Date(date),
+      date: recordDate,
       status: status as AttendanceStatus,
-      note: note?.trim() || null,
+      note: note || null,
     },
+    select: { id: true },
+  });
+
+  await writeAuditLog({
+    actorUserId: actor.id,
+    action: "attendance.record",
+    entityType: "AttendanceRecord",
+    entityId: record.id,
+    metadata: { studentId, date, status },
   });
 
   revalidatePath("/admin/attendance");
   redirect("/admin/attendance");
 }
-

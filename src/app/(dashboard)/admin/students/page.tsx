@@ -32,6 +32,7 @@ export default async function StudentsPage() {
 
 	const getStudents = () =>
 		prisma.student.findMany({
+			where: { user: { isActive: true } },
 			orderBy: [{ studentNumber: 'asc' }],
 			include: {
 				user: { select: { id: true, name: true, email: true } },
@@ -57,8 +58,9 @@ export default async function StudentsPage() {
 
 	try {
 		students = await getStudents();
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	const assigned = students.filter((s) => s.allocations.length > 0).length;

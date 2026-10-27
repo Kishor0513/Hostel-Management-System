@@ -16,6 +16,8 @@ import {
 	YAxis,
 } from 'recharts';
 
+import { formatMoney } from '@/lib/format';
+
 import ChartCard from './ChartCard';
 
 type TrendPoint = { label: string; value: number };
@@ -54,6 +56,7 @@ export default function DashboardCharts({
 		color: '#f8fafc',
 	};
 	const legendStyle = { color: 'rgba(226,232,240,0.92)', fontSize: '12px' };
+	const initialChartSize = { width: 1, height: 1 };
 
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-5">
@@ -65,6 +68,7 @@ export default function DashboardCharts({
 					<ResponsiveContainer
 						width="100%"
 						height="100%"
+						initialDimension={initialChartSize}
 					>
 						<PieChart>
 							<Tooltip contentStyle={tooltipStyle} />
@@ -101,10 +105,11 @@ export default function DashboardCharts({
 					<ResponsiveContainer
 						width="100%"
 						height="100%"
+						initialDimension={initialChartSize}
 					>
 						<AreaChart
 							data={paymentsTrend}
-							margin={{ top: 6, right: 8, left: -14, bottom: 4 }}
+							margin={{ top: 12, right: 8, left: -14, bottom: 4 }}
 						>
 							<defs>
 								<linearGradient
@@ -140,11 +145,16 @@ export default function DashboardCharts({
 								tick={axisTick}
 								axisLine={axisLine}
 								tickLine={false}
+								tickFormatter={(v) =>
+									Number(v) === 0
+										? '0'
+										: `${Math.round(Number(v) / 1000)}k`
+								}
 							/>
 							<Tooltip
 								contentStyle={tooltipStyle}
 								formatter={(v: unknown) => [
-									`$${Number(v).toLocaleString()}`,
+									formatMoney(Number(v)),
 									'Revenue',
 								]}
 							/>
@@ -169,10 +179,11 @@ export default function DashboardCharts({
 					<ResponsiveContainer
 						width="100%"
 						height="100%"
+						initialDimension={initialChartSize}
 					>
 						<AreaChart
 							data={attendanceTrend}
-							margin={{ top: 6, right: 8, left: -14, bottom: 4 }}
+							margin={{ top: 12, right: 8, left: -14, bottom: 4 }}
 						>
 							<defs>
 								<linearGradient
@@ -240,6 +251,7 @@ export default function DashboardCharts({
 					<ResponsiveContainer
 						width="100%"
 						height="100%"
+						initialDimension={initialChartSize}
 					>
 						<BarChart
 							data={ticketBarData}
@@ -256,6 +268,7 @@ export default function DashboardCharts({
 								tickLine={false}
 							/>
 							<YAxis
+								allowDecimals={false}
 								tick={axisTick}
 								axisLine={axisLine}
 								tickLine={false}

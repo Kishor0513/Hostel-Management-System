@@ -1,5 +1,5 @@
+import AccountProfileForm from '@/components/auth/AccountProfileForm';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
 	Card,
 	CardContent,
@@ -7,12 +7,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { requireRole } from '@/lib/auth';
-import { Mail, Shield, User, UserCircle } from 'lucide-react';
-
-import { updateMyAccount } from './actions';
+import { User, UserCircle } from 'lucide-react';
 
 export default async function ManageAccountsPage() {
 	const user = await requireRole(['ADMIN', 'STAFF']);
@@ -44,63 +40,10 @@ export default async function ManageAccountsPage() {
 						</div>
 					</CardHeader>
 					<CardContent>
-						<form
-							action={updateMyAccount}
-							className="space-y-5 py-2"
-						>
-							<div className="space-y-2">
-								<Label htmlFor="name">Display Name</Label>
-								<div className="relative">
-									<User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-									<Input
-										id="name"
-										name="name"
-										defaultValue={user.name}
-										required
-										className="pl-10"
-									/>
-								</div>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="email">Login Email</Label>
-								<div className="relative">
-									<Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-									<Input
-										id="email"
-										name="email"
-										type="email"
-										defaultValue={user.email}
-										required
-										className="pl-10"
-									/>
-								</div>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="password">Update Password</Label>
-								<div className="relative">
-									<Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-									<Input
-										id="password"
-										name="password"
-										type="password"
-										placeholder="••••••••"
-										minLength={8}
-										className="pl-10"
-									/>
-								</div>
-								<p className="text-[0.7rem] font-medium text-slate-500 italic">
-									Leave blank to keep current password.
-								</p>
-							</div>
-							<div className="flex justify-end pt-3 border-t border-white/5">
-								<Button
-									type="submit"
-									className="bg-rose-600 hover:bg-rose-500 font-bold px-8 shadow-[0_10px_24px_rgba(225,29,72,0.3)] border-none"
-								>
-									Save Changes
-								</Button>
-							</div>
-						</form>
+						<AccountProfileForm
+							name={user.name}
+							email={user.email}
+						/>
 					</CardContent>
 				</Card>
 

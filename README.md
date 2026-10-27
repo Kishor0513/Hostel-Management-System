@@ -1,161 +1,225 @@
 # Hostel Management System (HMS)
 
-A modern, full-stack application built with Next.js, Prisma, and PostgreSQL for efficient hostel administration.
+A full-stack hostel operations application built with Next.js, Prisma, and PostgreSQL. It ships with role-based admin and student portals, real database-backed authentication, audited write operations, and a production deployment path.
 
 ![Dashboard Preview](public/screenshots/admin-dashboard-current.png)
 
-> **Note:** Animations and charts fully load with 3-10 second delays for optimal visual presentation.
+## Screenshots
 
-## Dashboard Screenshots (Current Build)
+| Module                | Preview                                       |
+| --------------------- | --------------------------------------------- |
+| Admin overview        | `public/screenshots/admin-dashboard-current.png` |
+| Students              | `public/screenshots/students-dashboard-current.png` |
+| Rooms and beds        | `public/screenshots/rooms-dashboard-current.png` |
+| Payments              | `public/screenshots/payments-dashboard-current.png` |
+| Attendance            | `public/screenshots/attendance-dashboard-current.png` |
+| Maintenance           | `public/screenshots/maintenance-dashboard-current.png` |
+| Complaints            | `public/screenshots/complaints-dashboard-current.png` |
+| Announcements         | `public/screenshots/announcements-dashboard-current.png` |
+| Staff                 | `public/screenshots/staff-dashboard-current.png` |
+| Allocations           | `public/screenshots/allocations-dashboard-current.png` |
+| Account management    | `public/screenshots/manage-accounts-dashboard-current.png` |
+| Settings              | `public/screenshots/admin-settings-current.png` |
 
-### Admin Overview
+## Features
 
-![Admin Dashboard](public/screenshots/admin-dashboard-current.png)
+- **Authentication and RBAC**: NextAuth credentials login backed by PostgreSQL. Every page and server action re-reads the user and role from the database, rejects deactivated accounts, and enforces `ADMIN` / `STAFF` / `STUDENT` access.
+- **Student portal**: Overview, room and bed allocation, invoices and payments, attendance, maintenance/complaint requests, announcements, and profile management.
+- **Admin operations**: Students, staff, rooms and beds, allocations, invoices and payments, attendance, maintenance, complaints, announcements, account management, and organization settings.
+- **Auditability**: Login attempts, logins, account changes, settings changes, and all administrative writes are recorded in `AuditLog`.
+- **Integrity guards**: Duplicate invoice periods, overpayments, room capacity reductions, allocation conflicts, and destructive deletes are validated server-side.
+- **Soft deactivation**: Students and staff are deactivated rather than deleted, preserving invoices, attendance, and audit history.
+- **Production plumbing**: Environment validation, rate limiting, security headers, health checks, PostgreSQL migrations, Docker multi-stage builds, Docker Compose, and GitHub Actions CI with a database-backed smoke test.
+- **UI**: Responsive dashboards, charts, light/violet-dark themes, and accessible shared components.
 
-### Students Management
+## Tech Stack
 
-![Students Dashboard](public/screenshots/students-dashboard-current.png)
+- Next.js 16.4 (App Router, React 19)
+- TypeScript
+- PostgreSQL 15+
+- Prisma 7.10
+- NextAuth.js 4
+- Tailwind CSS 4
+- Zod 4
+- Recharts, Radix UI, Lucide, Framer Motion, Sonner
 
-### Rooms & Beds Management
+## Requirements
 
-![Rooms Dashboard](public/screenshots/rooms-dashboard-current.png)
+- Node.js `^20.19`, `^22.12`, or `>=24` (CI and Docker use Node 22)
+- npm 10+
+- PostgreSQL 15+ for local development
+- Docker and Docker Compose for the containerized path (optional)
 
-### Payments & Billing
+## Local Development
 
-![Payments Dashboard](public/screenshots/payments-dashboard-current.png)
-
-### Attendance Tracking
-
-![Attendance Dashboard](public/screenshots/attendance-dashboard-current.png)
-
-### Maintenance Requests
-
-![Maintenance Dashboard](public/screenshots/maintenance-dashboard-current.png)
-
-### Complaint Ticketing
-
-![Complaints Dashboard](public/screenshots/complaints-dashboard-current.png)
-
-### Announcements
-
-![Announcements Dashboard](public/screenshots/announcements-dashboard-current.png)
-
-### Staff Management
-
-![Staff Dashboard](public/screenshots/staff-dashboard-current.png)
-
-### Bed Allocations
-
-![Allocations Dashboard](public/screenshots/allocations-dashboard-current.png)
-
-### Account Management
-
-![Account Management](public/screenshots/manage-accounts-dashboard-current.png)
-
-### Admin Settings
-
-![Admin Settings](public/screenshots/admin-settings-current.png)
-
-## Dashboard Route Coverage
-
-This project includes the following dashboard pages under `src/app/(dashboard)`. Existing screenshots are mapped below.
-
-| Route                         | Screenshot                              |
-| ----------------------------- | --------------------------------------- |
-| `/admin`                      | `admin-dashboard-current.png`           |
-| `/admin/allocations`          | `allocations-dashboard-current.png`     |
-| `/admin/announcements`        | `announcements-dashboard-current.png`   |
-| `/admin/attendance`           | `attendance-dashboard-current.png`      |
-| `/admin/complaints`           | `complaints-dashboard-current.png`      |
-| `/admin/maintenance`          | `maintenance-dashboard-current.png`     |
-| `/admin/manage-accounts`      | `manage-accounts-dashboard-current.png` |
-| `/admin/payments`             | `payments-dashboard-current.png`        |
-| `/admin/rooms`                | `rooms-dashboard-current.png`           |
-| `/admin/rooms/[roomId]`       | `rooms-dashboard-current.png`           |
-| `/admin/settings`             | `admin-settings-current.png`            |
-| `/admin/staff`                | `staff-dashboard-current.png`           |
-| `/admin/staff/[staffId]`      | `staff-dashboard-current.png`           |
-| `/admin/students`             | `students-dashboard-current.png`        |
-| `/admin/students/[studentId]` | `students-dashboard-current.png`        |
-| `/announcements`              | `announcements-dashboard-current.png`   |
-
-## Screenshot Files (Current)
-
-- [Admin Dashboard](public/screenshots/admin-dashboard-current.png)
-- [Students Dashboard](public/screenshots/students-dashboard-current.png)
-- [Rooms Dashboard](public/screenshots/rooms-dashboard-current.png)
-- [Payments Dashboard](public/screenshots/payments-dashboard-current.png)
-- [Attendance Dashboard](public/screenshots/attendance-dashboard-current.png)
-- [Maintenance Dashboard](public/screenshots/maintenance-dashboard-current.png)
-- [Complaints Dashboard](public/screenshots/complaints-dashboard-current.png)
-- [Announcements Dashboard](public/screenshots/announcements-dashboard-current.png)
-- [Staff Dashboard](public/screenshots/staff-dashboard-current.png)
-- [Allocations Dashboard](public/screenshots/allocations-dashboard-current.png)
-- [Account Management](public/screenshots/manage-accounts-dashboard-current.png)
-- [Admin Settings](public/screenshots/admin-settings-current.png)
-
-## 🚀 Key Features
-
-- **Premium Authentication**: Custom-built login portal with glassmorphism design and secure session management via NextAuth.
-- **Enhanced Dashboard**: Visual-first administration with AreaCharts and PieCharts for real-time monitoring of occupancy, revenue, and attendance.
-- **Realistic Data Seeding**: Robust seed script to generate 12+ students, 3 months of financial history, and 30 days of attendance for immediate testing.
-- **Operations Management**:
-  - **Rooms & Beds**: Track allocation and capacity.
-  - **Billing**: Automated invoice generation and payment tracking.
-  - **Attendance**: Daily presence logs.
-  - **Support Tickets**: Integrated maintenance and complaint ticketing system.
-- **Announcements**: Broadcast system for notices and updates.
-- **Unified Hover System**: A single global cursor-follow glow effect is applied consistently across cards, tables, controls, and dashboard modules.
-- **Theme Modes**: Two polished theme options are supported: `White` and `Violet Dark`.
-
-## 🎨 Theme & Interaction
-
-- Theme state is controlled at the root layout using `data-theme` on the `html` element.
-- `ThemeToggle` switches between `light` (white) and `dark-violet` only.
-- Global pointer-follow hover intensity is handled by `GlobalMouseFollow` and shared `.theme-mouse-follow` styles.
-- Competing hover overlays are neutralized so the UI always uses one consistent hover language.
-
-## 🛠️ Setup & Installation
-
-1. **Environment Variables**: Create a `.env` file in the root directory:
-
-   ```env
-   DATABASE_URL="postgresql://postgres:password@localhost:5432/hms"
-   NEXTAUTH_SECRET="your-secret-here"
-   NEXTAUTH_URL="http://localhost:3000"
-   ```
-
-2. **Database Setup**:
+1. Install dependencies:
 
    ```bash
-   npx prisma generate
-   npx prisma db push
+   npm install
    ```
 
-3. **Seed Demo Data**:
+2. Create the environment file and set a real secret:
 
    ```bash
-   npx -y tsx prisma/seed.ts
+   cp .env.example .env
+   openssl rand -base64 48
    ```
 
-4. **Run Development Server**:
+   Put the generated value in `NEXTAUTH_SECRET`. Point `DATABASE_URL` at your local PostgreSQL database.
+
+3. Apply migrations, generate the client, and seed demo data:
+
+   ```bash
+   npm run db:generate
+   npm run db:deploy
+   npm run db:seed
+   ```
+
+4. Start the development server:
+
    ```bash
    npm run dev
    ```
 
-## 🔐 Login Credentials (Demo)
+5. Open `http://localhost:3000`. Unauthenticated requests are redirected to `/login`.
 
-| Role        | Email                 | Password     |
-| ----------- | --------------------- | ------------ |
-| **Admin**   | `admin@hostel.local`  | `admin123`   |
-| **Warden**  | `warden@hostel.local` | `staff123`   |
-| **Student** | `suman@student.local` | `student123` |
+For schema changes during development, use `npm run db:migrate` and commit the generated migration. Never use `prisma db push` against a production database.
 
-## 🧪 Tech Stack
+## Environment Variables
 
-- **Framework**: Next.js 14 (App Router)
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: NextAuth.js
-- **Charts**: Recharts
-- **Styling**: Tailwind CSS & Framer Motion (Glassmorphism)
-- **UI Components**: Radix UI & Lucide Icons
+| Variable            | Required | Purpose                                                                 |
+| ------------------- | -------- | ----------------------------------------------------------------------- |
+| `DATABASE_URL`      | Yes      | PostgreSQL connection string.                                           |
+| `NEXTAUTH_SECRET`   | Yes      | Signs session JWTs. Use at least 32 random bytes.                       |
+| `NEXTAUTH_URL`      | Yes      | Public application origin, for example `https://hms.example.com`.       |
+| `POSTGRES_USER`     | Compose  | Database user created by Docker Compose.                                |
+| `POSTGRES_PASSWORD` | Compose  | Database password created by Docker Compose. Use a strong value.        |
+| `POSTGRES_DB`       | Compose  | Database name created by Docker Compose.                                |
+| `APP_PORT`          | No       | Host port for the app container. Defaults to `3000`.                    |
+| `APP_URL`           | No       | Base URL used by the smoke test. Defaults to `http://localhost:3000`.   |
+
+Environment variables are validated at server startup by `src/lib/env.ts`. The application fails fast if a required value is missing or malformed.
+
+## Demo Credentials
+
+Seed data is for development only. These accounts exist after `npm run db:seed`:
+
+| Role    | Email                 | Password     |
+| ------- | --------------------- | ------------ |
+| Admin   | `admin@hostel.local`  | `admin123`   |
+| Warden  | `warden@hostel.local` | `staff123`   |
+| Student | `suman@student.local` | `student123` |
+
+Change or remove demo accounts before exposing a deployment. The seed also creates `inactive@student.local`, a deactivated account used by the smoke test to verify that suspended users cannot sign in. Never run the seed profile against production data.
+
+## Scripts
+
+| Script              | Description                                              |
+| ------------------- | -------------------------------------------------------- |
+| `npm run dev`       | Start the Next.js development server.                    |
+| `npm run build`     | Build the production bundle.                             |
+| `npm run start`     | Start the standalone production server after a build.    |
+| `npm run lint`      | Run ESLint.                                             |
+| `npm run typecheck` | Run the TypeScript compiler without emitting.           |
+| `npm run db:generate` | Generate the Prisma client into `src/generated/prisma`. |
+| `npm run db:migrate`  | Create and apply a development migration.              |
+| `npm run db:deploy`   | Apply committed migrations in production/CI.           |
+| `npm run db:seed`     | Load demo data.                                        |
+| `npm run db:create-admin` | Create/reset the first ADMIN account without seeding. |
+| `npm run db:studio`   | Open Prisma Studio.                                    |
+| `npm run smoke`       | Run HTTP smoke tests against a running instance.       |
+
+## Docker Compose
+
+The Compose stack runs PostgreSQL, applies migrations, and starts the production image.
+
+```bash
+cp .env.example .env
+# Set NEXTAUTH_SECRET, NEXTAUTH_URL, and a URL-safe POSTGRES_PASSWORD in .env
+
+docker compose build
+docker compose up -d db migrate app
+docker compose ps
+curl -fsS http://localhost:3000/api/health
+```
+
+Optional demo data:
+
+```bash
+docker compose --profile seed run --rm seed
+```
+
+The `seed` service deletes existing application data before inserting demo records. Do not run it against production. For production, create the first administrator with `npm run db:create-admin` instead.
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for admin bootstrap, managed Postgres, TLS, backups, migration procedure, and the production checklist.
+
+## Roles and Route Access
+
+| Area                          | ADMIN | STAFF | STUDENT |
+| ----------------------------- | ----- | ----- | ------- |
+| `/admin/**`                   | Yes   | Yes   | No      |
+| `/admin/settings`             | Yes   | No    | No      |
+| `/admin/staff`                | Yes   | No    | No      |
+| `/admin/announcements`        | Yes   | No    | No      |
+| `/student/**`                 | No    | No    | Yes     |
+| `/announcements`              | Yes   | Yes   | Yes     |
+| `/api/health`                 | Public | Public | Public |
+| `/login`, `/forbidden`        | Public | Public | Public |
+
+Suspended accounts (`User.isActive = false`) cannot sign in and existing sessions are rejected on the next request.
+
+## Security Model
+
+- Passwords are hashed with bcrypt (cost 12 for new and updated passwords).
+- Login attempts are limited to 5 failures per identifier and 50 per IP in a 15-minute window.
+- Sessions are JWTs with an 8-hour maximum age, refreshed at most once per hour.
+- Authorization uses the current database record, not only JWT claims.
+- All administrative mutations require an authenticated role appropriate to the resource; staff management, announcements, and settings are `ADMIN`-only. Every administrative write is audited.
+- Invoice/payment and bed-allocation writes run in serializable transactions to prevent duplicate invoices and concurrent bed conflicts.
+- Security headers (`X-Frame-Options`, `nosniff`, referrer policy, permissions policy) are set in `next.config.ts`. HSTS is enabled in production.
+- `/api/health` performs a database query and returns `503` when PostgreSQL is unavailable.
+- `npm audit` reports no known vulnerabilities for the committed lockfile; CI fails on high or critical advisories.
+
+Add a Content-Security-Policy at your reverse proxy or CDN after testing your asset and integration requirements. The application does not set a CSP by default because Next.js injects inline hydration scripts.
+
+## CI
+
+`.github/workflows/ci.yml` starts PostgreSQL, installs with `npm ci`, runs the dependency audit, Prisma generate, lint, typecheck, migrations, seed, admin-bootstrap verification, build, Compose validation, and a standalone-server smoke test that verifies:
+
+- the health endpoint and database connectivity,
+- unauthenticated `/admin` redirects to `/login`,
+- admin login and every admin route,
+- staff login and admin-only route isolation,
+- student portal access and role isolation,
+- deactivated accounts are rejected.
+
+A second job builds the production Docker image.
+
+## Project Structure
+
+```text
+src/app/(dashboard)/admin   Admin pages and server actions
+src/app/(dashboard)/student Student portal and server actions
+src/app/api/auth            NextAuth route
+src/app/api/health          Readiness/liveness endpoint
+src/lib                     Auth, Prisma, audit, rate limit, settings, helpers
+src/components              UI, dashboard, auth components
+src/generated/prisma        Generated Prisma client (not committed)
+prisma/migrations           Committed PostgreSQL migrations
+scripts/smoke.mjs           HTTP smoke test
+scripts/create-admin.ts     Non-destructive first-admin bootstrap
+```
+
+## Operational Notes
+
+- Run `npm run db:deploy` as a release step before starting new application instances.
+- Create the first production administrator with `npm run db:create-admin` instead of the destructive demo seed.
+- Use a pooled PostgreSQL connection string when deploying to serverless platforms.
+- Point `NEXTAUTH_URL` at the exact public origin and terminate TLS at the proxy or platform.
+- Audit and login-attempt tables grow over time. Add a retention job appropriate for your compliance requirements.
+- Rate limiting is stored in PostgreSQL, so it works across multiple application instances without shared memory.
+- The demo seed is intentionally destructive. Use managed database backups before any retention or maintenance task.
+
+## License
+
+No license has been declared for this repository.

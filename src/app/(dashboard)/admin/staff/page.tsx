@@ -28,10 +28,11 @@ import { createStaff as createStaffAction } from './actions';
 export const dynamic = 'force-dynamic';
 
 export default async function StaffPage() {
-	await requireRole(['ADMIN', 'STAFF']);
+	await requireRole(['ADMIN']);
 
 	const getStaff = () =>
 		prisma.staff.findMany({
+			where: { user: { isActive: true } },
 			orderBy: { staffCode: 'asc' },
 			include: {
 				user: { select: { id: true, name: true, email: true, role: true } },
@@ -45,8 +46,9 @@ export default async function StaffPage() {
 
 	try {
 		staff = await getStaff();
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	return (

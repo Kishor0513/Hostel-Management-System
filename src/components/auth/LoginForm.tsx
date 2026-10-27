@@ -1,6 +1,6 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -19,7 +19,26 @@ import { Label } from '@/components/ui/label';
 export default function LoginForm() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const callbackUrl = searchParams.get('callbackUrl') ?? '/admin';
+	const callbackUrl = searchParams.get('callbackUrl');
+
+	const resolveCallbackUrl = (role: string | undefined) => {
+		if (!callbackUrl || !callbackUrl.startsWith('/')) return null;
+
+		try {
+			const url = new URL(callbackUrl, window.location.origin);
+			if (url.origin !== window.location.origin) return null;
+			if (url.pathname === '/login') return null;
+			if (role === 'STUDENT' && !url.pathname.startsWith('/student')) {
+				return null;
+			}
+			if (role !== 'STUDENT' && !url.pathname.startsWith('/admin')) {
+				return null;
+			}
+			return `${url.pathname}${url.search}${url.hash}`;
+		} catch {
+			return null;
+		}
+	};
 
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
@@ -37,10 +56,17 @@ export default function LoginForm() {
 			});
 
 			if (res?.error) {
-				toast.error('Invalid credentials');
+				toast.error(
+					'Invalid credentials, or too many failed attempts. Try again later.',
+				);
 			} else {
+				const session = await getSession();
+				const role = session?.user?.role;
+				const roleHome = role === 'STUDENT' ? '/student' : '/admin';
+				const target = resolveCallbackUrl(role) ?? roleHome;
+
 				toast.success('Logged in successfully');
-				router.push(callbackUrl);
+				router.push(target);
 				router.refresh();
 			}
 		} catch {

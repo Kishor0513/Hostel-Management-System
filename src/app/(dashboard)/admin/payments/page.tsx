@@ -18,7 +18,10 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
+import { formatMoney } from '@/lib/format';
+import { resolveInvoiceStatus } from '@/lib/invoices';
 import { prisma } from '@/lib/prisma';
+import { getOrganizationSettings } from '@/lib/settings';
 import { Banknote, Receipt, UserPlus } from 'lucide-react';
 
 import {
@@ -31,8 +34,16 @@ export const dynamic = 'force-dynamic';
 export default async function PaymentsPage() {
 	await requireRole(['ADMIN', 'STAFF']);
 
+	const settings = await getOrganizationSettings();
+	const defaultDueDate = new Date();
+	defaultDueDate.setUTCDate(
+		defaultDueDate.getUTCDate() + settings.invoiceDueDays,
+	);
+	const defaultDueDateValue = defaultDueDate.toISOString().slice(0, 10);
+
 	const getStudents = () =>
 		prisma.student.findMany({
+			where: { user: { isActive: true } },
 			orderBy: { studentNumber: 'asc' },
 			include: { user: { select: { name: true } } },
 		});
@@ -60,14 +71,20 @@ export default async function PaymentsPage() {
 
 	try {
 		[students, invoices] = await Promise.all([getStudents(), getInvoices()]);
-	} catch {
-		dataError = 'Database connection failed. Check DATABASE_URL in .env.';
+	} catch (error) {
+		console.error('[page] failed to load data', error);
+		dataError = 'Could not load data. Please try again.';
 	}
 
 	const invoicesComputed = invoices.map((inv) => {
 		const paid = inv.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
 		const outstanding = Number(inv.amountDue) - paid;
-		return { ...inv, paid, outstanding: Math.max(0, outstanding) };
+		return {
+			...inv,
+			paid,
+			outstanding: Math.max(0, outstanding),
+			status: resolveInvoiceStatus(inv.status, inv.dueDate),
+		};
 	});
 
 	const totalOutstanding = invoicesComputed.reduce(
@@ -89,7 +106,7 @@ export default async function PaymentsPage() {
 					variant={totalOutstanding > 0 ? 'danger' : 'success'}
 					className="h-fit"
 				>
-					Outstanding: NPR {totalOutstanding.toFixed(2)}
+					Outstanding: {formatMoney(totalOutstanding)}
 				</Badge>
 			</div>
 
@@ -110,7 +127,7 @@ export default async function PaymentsPage() {
 							Outstanding
 						</div>
 						<div className="text-xl font-bold text-white">
-							NPR {totalOutstanding.toFixed(0)}
+							{formatMoney(totalOutstanding)}
 						</div>
 					</div>
 				</div>
@@ -199,6 +216,7 @@ export default async function PaymentsPage() {
 								id="dueDate"
 								name="dueDate"
 								type="date"
+								defaultValue={defaultDueDateValue}
 								required
 							/>
 						</div>
@@ -237,7 +255,7 @@ export default async function PaymentsPage() {
 						<TableHeader>
 							<TableRow>
 								<TableHead>Student</TableHead>
-								<TableHead className="w-35">Period</TableHead>
+								<TableHead className="w-42">Period</TableHead>
 								<TableHead className="w-27.5">Due</TableHead>
 								<TableHead className="w-32.5">Outstanding</TableHead>
 								<TableHead className="w-27.5">Status</TableHead>
@@ -257,18 +275,18 @@ export default async function PaymentsPage() {
 											</div>
 										</div>
 									</TableCell>
-									<TableCell className="text-xs text-slate-400">
+									<TableCell className="whitespace-nowrap text-xs text-slate-400">
 										{inv.periodStart.toISOString().slice(0, 10)} —{' '}
 										{inv.periodEnd.toISOString().slice(0, 10)}
 									</TableCell>
-									<TableCell className="text-xs font-medium text-slate-300">
+									<TableCell className="whitespace-nowrap text-xs font-medium text-slate-300">
 										{inv.dueDate.toISOString().slice(0, 10)}
 									</TableCell>
 									<TableCell>
 										<Badge
 											variant={inv.outstanding > 0 ? 'warning' : 'success'}
 										>
-											NPR {inv.outstanding.toFixed(2)}
+											{formatMoney(inv.outstanding)}
 										</Badge>
 									</TableCell>
 									<TableCell>
@@ -319,7 +337,7 @@ export default async function PaymentsPage() {
 												</Button>
 											</form>
 										) : (
-											<span className="text-xs font-semibold text-emerald-400 uppercase tracking-widest">
+											<span className="whitespace-nowrap text-xs font-semibold text-emerald-400 uppercase tracking-widest">
 												Fully Paid
 											</span>
 										)}

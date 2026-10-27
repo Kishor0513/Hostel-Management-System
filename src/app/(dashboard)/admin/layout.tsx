@@ -1,10 +1,12 @@
 import Link from 'next/link';
 
+import ActionToast from '@/components/dashboard/ActionToast';
 import AdminTopNav from '@/components/dashboard/AdminTopNav';
-import AdminUserMenu from '@/components/dashboard/AdminUserMenu';
+import UserMenu from '@/components/dashboard/UserMenu';
 import ThemeToggle from '@/components/dashboard/ThemeToggle';
 import type { UserRole } from '@/generated/prisma/enums';
 import { requireRole } from '@/lib/auth';
+import { getOrganizationSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +16,7 @@ export default async function AdminLayout({
 	children: React.ReactNode;
 }>) {
 	const user = await requireRole(['ADMIN', 'STAFF'] satisfies UserRole[]);
+	const settings = await getOrganizationSettings();
 
 	return (
 		<div className="tahoe-shell relative min-h-screen overflow-x-hidden text-slate-900 dark:text-slate-100">
@@ -38,8 +41,8 @@ export default async function AdminLayout({
 									<span className="text-sm font-bold text-white">O</span>
 								</div>
 								<div className="hidden sm:block">
-									<p className="text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-slate-400">
-										Hostel Suite
+									<p className="max-w-44 truncate text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-slate-400">
+										{settings.organizationName}
 									</p>
 									<p className="text-base font-bold leading-none text-slate-50">
 										Admin Console
@@ -48,11 +51,11 @@ export default async function AdminLayout({
 							</Link>
 
 							<div className="relative z-50 min-w-0 flex-1 flex justify-center">
-								<AdminTopNav />
+								<AdminTopNav role={user.role} />
 							</div>
 
 							<div className="relative z-50 shrink-0">
-								<AdminUserMenu
+								<UserMenu
 									name={user.name}
 									role={user.role}
 								/>
@@ -61,6 +64,8 @@ export default async function AdminLayout({
 					</header>
 				</div>
 			</div>
+
+			<ActionToast />
 
 			<div className="relative z-10 w-full">
 				<main className="relative z-10 mx-auto w-full max-w-350 px-4 py-5 mt-24 lg:px-6 lg:py-6 lg:mt-28">

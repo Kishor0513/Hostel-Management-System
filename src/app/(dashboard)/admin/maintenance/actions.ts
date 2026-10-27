@@ -6,14 +6,15 @@ import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit";
 import type { UserRole } from "@/generated/prisma/enums";
 import type { MaintenanceStatus } from "@/generated/prisma/enums";
 
 const allowedRoles: UserRole[] = ["ADMIN", "STAFF"];
 
 const maintenanceCreateSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
+  title: z.string().trim().min(3).max(140),
+  description: z.string().trim().min(10).max(4000),
   studentId: z.string().optional().nullable(),
   roomId: z.string().optional().nullable(),
   assignedToStaffId: z.string().optional().nullable(),
@@ -23,11 +24,11 @@ const maintenanceUpdateSchema = z.object({
   requestId: z.string().min(1),
   status: z.enum(["OPEN", "IN_PROGRESS", "DONE"]),
   assignedToStaffId: z.string().optional().nullable(),
-  comment: z.string().optional().nullable(),
+  comment: z.string().trim().max(1000).optional().nullable(),
 });
 
 export async function createMaintenanceRequest(formData: FormData) {
-  const user = await requireRole(allowedRoles);
+  const actor = await requireRole(allowedRoles);
 
   const parsed = maintenanceCreateSchema.safeParse({
     title: formData.get("title"),
@@ -36,31 +37,51 @@ export async function createMaintenanceRequest(formData: FormData) {
     roomId: formData.get("roomId"),
     assignedToStaffId: formData.get("assignedToStaffId"),
   });
-  if (!parsed.success) redirect("/admin/maintenance");
+  if (!parsed.success) redirect("/admin/maintenance?error=invalid");
 
   const { title, description, studentId, roomId, assignedToStaffId } = parsed.data;
 
-  await prisma.$transaction(async (tx) => {
-    const req = await tx.maintenanceRequest.create({
+  const request = await prisma.$transaction(async (tx) => {
+    const staff = assignedToStaffId
+      ? await tx.staff.findUnique({
+          where: { id: assignedToStaffId },
+          select: { id: true, userId: true, user: { select: { isActive: true } } },
+        })
+      : null;
+    const activeStaff = staff?.user.isActive ? staff : null;
+
+    const created = await tx.maintenanceRequest.create({
       data: {
-        title: title.trim(),
-        description: description.trim(),
+        title,
+        description,
         studentId: studentId || null,
         roomId: roomId || null,
-        createdByUserId: user.id,
-        assignedToStaffId: assignedToStaffId || null,
+        createdByUserId: actor.id,
+        assignedToStaffId: activeStaff?.id ?? null,
+        assignedToUserId: activeStaff?.userId ?? null,
         status: "OPEN",
       },
+      select: { id: true },
     });
 
     await tx.maintenanceLog.create({
       data: {
-        requestId: req.id,
+        requestId: created.id,
         status: "OPEN" as MaintenanceStatus,
         comment: "Created",
-        changedByUserId: user.id,
+        changedByUserId: actor.id,
       },
     });
+
+    return created;
+  });
+
+  await writeAuditLog({
+    actorUserId: actor.id,
+    action: "maintenance.create",
+    entityType: "MaintenanceRequest",
+    entityId: request.id,
+    metadata: { studentId: studentId || null, roomId: roomId || null },
   });
 
   revalidatePath("/admin/maintenance");
@@ -68,7 +89,7 @@ export async function createMaintenanceRequest(formData: FormData) {
 }
 
 export async function updateMaintenanceStatus(formData: FormData) {
-  const user = await requireRole(allowedRoles);
+  const actor = await requireRole(allowedRoles);
 
   const parsed = maintenanceUpdateSchema.safeParse({
     requestId: formData.get("requestId"),
@@ -76,22 +97,31 @@ export async function updateMaintenanceStatus(formData: FormData) {
     assignedToStaffId: formData.get("assignedToStaffId"),
     comment: formData.get("comment"),
   });
-  if (!parsed.success) redirect("/admin/maintenance");
+  if (!parsed.success) redirect("/admin/maintenance?error=invalid");
 
   const { requestId, status, assignedToStaffId, comment } = parsed.data;
 
-  await prisma.$transaction(async (tx) => {
-    // If we assign a staff member, we also store their userId for easier querying in the future.
+  const updated = await prisma.$transaction(async (tx) => {
+    const existing = await tx.maintenanceRequest.findUnique({
+      where: { id: requestId },
+      select: { id: true },
+    });
+    if (!existing) return false;
+
     const staff = assignedToStaffId
-      ? await tx.staff.findUnique({ where: { id: assignedToStaffId }, select: { userId: true } })
+      ? await tx.staff.findUnique({
+          where: { id: assignedToStaffId },
+          select: { id: true, userId: true, user: { select: { isActive: true } } },
+        })
       : null;
+    const activeStaff = staff?.user.isActive ? staff : null;
 
     await tx.maintenanceRequest.update({
       where: { id: requestId },
       data: {
         status,
-        assignedToStaffId: assignedToStaffId || null,
-        assignedToUserId: staff?.userId ?? null,
+        assignedToStaffId: activeStaff?.id ?? null,
+        assignedToUserId: activeStaff?.userId ?? null,
       },
     });
 
@@ -99,13 +129,28 @@ export async function updateMaintenanceStatus(formData: FormData) {
       data: {
         requestId,
         status,
-        comment: comment?.trim() || null,
-        changedByUserId: user.id,
+        comment: comment || null,
+        changedByUserId: actor.id,
       },
     });
+
+    return true;
   });
+
+  if (updated) {
+    await writeAuditLog({
+      actorUserId: actor.id,
+      action: "maintenance.update",
+      entityType: "MaintenanceRequest",
+      entityId: requestId,
+      metadata: {
+        status,
+        assignedToStaffId: assignedToStaffId || null,
+        commentChanged: Boolean(comment),
+      },
+    });
+  }
 
   revalidatePath("/admin/maintenance");
   redirect("/admin/maintenance");
 }
-
