@@ -106,7 +106,7 @@ export default function UserMenu({ name, role }: UserMenuProps) {
 
 			{open ? (
 				<div
-					className="absolute right-0 top-12 z-70 w-64 rounded-2xl border border-white/10 bg-slate-950/95 p-2 shadow-[0_24px_52px_rgba(10,7,21,0.7)] backdrop-blur-2xl group/user-menu"
+					className="absolute right-0 top-12 z-70 w-64 rounded-2xl border border-white/10 bg-[rgba(2,6,23,0.98)] p-2 shadow-[0_24px_52px_rgba(10,7,21,0.7)] backdrop-blur-2xl group/user-menu"
 					role="menu"
 				>
 					{/* User Info Header */}

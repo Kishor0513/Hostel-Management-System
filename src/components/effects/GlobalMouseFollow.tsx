@@ -33,6 +33,15 @@ function shouldSkip(el: HTMLElement) {
 		return true;
 	}
 
+	const position = window.getComputedStyle(el).position;
+	if (
+		position === 'absolute' ||
+		position === 'fixed' ||
+		position === 'sticky'
+	) {
+		return true;
+	}
+
 	return false;
 }
 

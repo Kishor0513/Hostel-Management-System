@@ -1,6 +1,7 @@
 import { ShieldCheck, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
 
+import type { Prisma } from '@/generated/prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +14,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+	ListFilters,
+	ListPagination,
+} from '@/components/ui/list-controls';
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -21,19 +26,41 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
+import {
+	getPageParam,
+	getSearchParam,
+	paginate,
+	type SearchParamsRecord,
+} from '@/lib/list';
 import { prisma } from '@/lib/prisma';
 
 import { createStaff as createStaffAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function StaffPage() {
+export default async function StaffPage({
+	searchParams,
+}: {
+	searchParams: Promise<SearchParamsRecord>;
+}) {
 	await requireRole(['ADMIN']);
 
-	const getStaff = () =>
+	const params = await searchParams;
+	const q = getSearchParam(params, 'q').trim();
+	const requestedPage = getPageParam(params);
+	const rawRole = getSearchParam(params, 'role');
+	const role = rawRole === 'ADMIN' || rawRole === 'STAFF' ? rawRole : '';
+
+	const getStaff = (
+		where: Prisma.StaffWhereInput,
+		skip: number,
+		take: number,
+	) =>
 		prisma.staff.findMany({
-			where: { user: { isActive: true } },
+			where,
 			orderBy: { staffCode: 'asc' },
+			skip,
+			take,
 			include: {
 				user: { select: { id: true, name: true, email: true, role: true } },
 			},
@@ -42,14 +69,47 @@ export default async function StaffPage() {
 	type StaffResult = Awaited<ReturnType<typeof getStaff>>;
 
 	let staff: StaffResult = [];
+	let totalStaff = 0;
+	let totalItems = 0;
+	let page = requestedPage;
 	let dataError: string | null = null;
 
+	const baseWhere: Prisma.StaffWhereInput = { user: { isActive: true } };
+	const searchWhere: Prisma.StaffWhereInput | null = q
+		? {
+				OR: [
+					{ staffCode: { contains: q, mode: 'insensitive' } },
+					{ designation: { contains: q, mode: 'insensitive' } },
+					{ department: { contains: q, mode: 'insensitive' } },
+					{ user: { name: { contains: q, mode: 'insensitive' } } },
+					{ user: { email: { contains: q, mode: 'insensitive' } } },
+				],
+			}
+		: null;
+	const listWhere: Prisma.StaffWhereInput = {
+		user: {
+			isActive: true,
+			...(role ? { role } : {}),
+		},
+		...(searchWhere ?? {}),
+	};
+
 	try {
-		staff = await getStaff();
+		[totalStaff, totalItems] = await Promise.all([
+			prisma.staff.count({ where: baseWhere }),
+			prisma.staff.count({ where: listWhere }),
+		]);
+
+		const pagination = paginate(totalItems, requestedPage);
+		page = pagination.page;
+		staff = await getStaff(listWhere, pagination.skip, pagination.take);
 	} catch (error) {
 		console.error('[page] failed to load data', error);
 		dataError = 'Could not load data. Please try again.';
 	}
+
+	const pagination = paginate(totalItems, page);
+	const hasActiveFilters = Boolean(q || role);
 
 	return (
 		<div className="space-y-6">
@@ -65,7 +125,7 @@ export default async function StaffPage() {
 					variant="info"
 					className="h-fit"
 				>
-					Total Staff: {staff.length}
+					Total Staff: {totalStaff}
 				</Badge>
 			</div>
 
@@ -171,6 +231,23 @@ export default async function StaffPage() {
 							<CardDescription>Directory</CardDescription>
 						</div>
 					</div>
+					<ListFilters
+						action="/admin/staff"
+						searchValue={q}
+						searchPlaceholder="Search name, email, code, or role"
+						filters={[
+							{
+								name: 'role',
+								label: 'Staff role',
+								value: role,
+								options: [
+									{ value: '', label: 'All roles' },
+									{ value: 'ADMIN', label: 'Administrators' },
+									{ value: 'STAFF', label: 'Staff' },
+								],
+							},
+						]}
+					/>
 				</CardHeader>
 				<CardContent className="p-0">
 					<Table>
@@ -233,13 +310,24 @@ export default async function StaffPage() {
 									<TableCell colSpan={5}>
 										<div className="data-empty">
 											<Users className="data-empty-icon" />
-											<p>No staff records found. Add personnel above.</p>
+											<p>
+												{hasActiveFilters
+													? 'No staff match these filters.'
+													: 'No staff records found. Add personnel above.'}
+											</p>
 										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
 						</TableBody>
 					</Table>
+					<ListPagination
+						basePath="/admin/staff"
+						{...pagination}
+						totalItems={totalItems}
+						params={{ q, role }}
+						itemLabel="staff members"
+					/>
 				</CardContent>
 			</Card>
 		</div>

@@ -1,3 +1,4 @@
+import type { Prisma } from '@/generated/prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,6 +11,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+	ListFilters,
+	ListPagination,
+} from '@/components/ui/list-controls';
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -18,6 +23,12 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
+import {
+	getPageParam,
+	getSearchParam,
+	paginate,
+	type SearchParamsRecord,
+} from '@/lib/list';
 import { prisma } from '@/lib/prisma';
 import {
 	CheckCircle2,
@@ -32,8 +43,23 @@ import { createMaintenanceRequest, updateMaintenanceStatus } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function MaintenancePage() {
+export default async function MaintenancePage({
+	searchParams,
+}: {
+	searchParams: Promise<SearchParamsRecord>;
+}) {
 	await requireRole(['ADMIN', 'STAFF']);
+
+	const params = await searchParams;
+	const q = getSearchParam(params, 'q').trim();
+	const requestedPage = getPageParam(params);
+	const rawStatus = getSearchParam(params, 'status');
+	const status =
+		rawStatus === 'OPEN' ||
+		rawStatus === 'IN_PROGRESS' ||
+		rawStatus === 'DONE'
+			? rawStatus
+			: '';
 
 	const getStaff = () =>
 		prisma.staff.findMany({
@@ -55,16 +81,22 @@ export default async function MaintenancePage() {
 			select: { id: true, building: true, floor: true, roomNumber: true },
 		});
 
-	const getRequests = () =>
+	const getRequests = (
+		where: Prisma.MaintenanceRequestWhereInput,
+		skip: number,
+		take: number,
+	) =>
 		prisma.maintenanceRequest.findMany({
+			where,
 			orderBy: { createdAt: 'desc' },
+			skip,
+			take,
 			include: {
 				student: { include: { user: { select: { name: true } } } },
 				room: { select: { building: true, floor: true, roomNumber: true } },
 				assignedToStaff: { include: { user: { select: { name: true } } } },
 				logs: { orderBy: { changedAt: 'desc' }, take: 1 },
 			},
-			take: 20,
 		});
 
 	type StaffResult = Awaited<ReturnType<typeof getStaff>>;
@@ -76,21 +108,69 @@ export default async function MaintenancePage() {
 	let students: StudentsResult = [];
 	let rooms: RoomsResult = [];
 	let requests: RequestsResult = [];
+	let totalRequests = 0;
+	let pendingCount = 0;
+	let totalItems = 0;
+	let page = requestedPage;
 	let dataError: string | null = null;
 
+	const searchWhere: Prisma.MaintenanceRequestWhereInput | null = q
+		? {
+				OR: [
+					{ title: { contains: q, mode: 'insensitive' } },
+					{ description: { contains: q, mode: 'insensitive' } },
+					{ student: { user: { name: { contains: q, mode: 'insensitive' } } } },
+					{
+						room: {
+							building: { contains: q, mode: 'insensitive' },
+						},
+					},
+				],
+			}
+		: null;
+	const listWhere: Prisma.MaintenanceRequestWhereInput = {
+		...(searchWhere ?? {}),
+		...(status ? { status } : {}),
+	};
+
 	try {
-		[staff, students, rooms, requests] = await Promise.all([
+		const [
+			staffResult,
+			studentsResult,
+			roomsResult,
+			totalCount,
+			pending,
+			filteredCount,
+		] = await Promise.all([
 			getStaff(),
 			getStudents(),
 			getRooms(),
-			getRequests(),
+			prisma.maintenanceRequest.count(),
+			prisma.maintenanceRequest.count({ where: { status: { not: 'DONE' } } }),
+			prisma.maintenanceRequest.count({ where: listWhere }),
 		]);
+
+		staff = staffResult;
+		students = studentsResult;
+		rooms = roomsResult;
+		totalRequests = totalCount;
+		pendingCount = pending;
+		totalItems = filteredCount;
+
+		const pagination = paginate(totalItems, requestedPage);
+		page = pagination.page;
+		requests = await getRequests(
+			listWhere,
+			pagination.skip,
+			pagination.take,
+		);
 	} catch (error) {
 		console.error('[page] failed to load data', error);
 		dataError = 'Could not load data. Please try again.';
 	}
 
-	const pendingCount = requests.filter((r) => r.status !== 'DONE').length;
+	const pagination = paginate(totalItems, page);
+	const hasActiveFilters = Boolean(q || status);
 
 	return (
 		<div className="space-y-6">
@@ -125,7 +205,7 @@ export default async function MaintenancePage() {
 					<div>
 						<div className="text-xs text-slate-400 font-medium">Total</div>
 						<div className="text-xl font-bold text-white tracking-tight">
-							{requests.length}
+							{totalRequests}
 						</div>
 					</div>
 				</div>
@@ -147,7 +227,7 @@ export default async function MaintenancePage() {
 					<div>
 						<div className="text-xs text-slate-400 font-medium">Solved</div>
 						<div className="text-xl font-bold text-white tracking-tight">
-							{requests.length - pendingCount}
+							{totalRequests - pendingCount}
 						</div>
 					</div>
 				</div>
@@ -278,6 +358,24 @@ export default async function MaintenancePage() {
 							<CardDescription>Repair process history</CardDescription>
 						</div>
 					</div>
+					<ListFilters
+						action="/admin/maintenance"
+						searchValue={q}
+						searchPlaceholder="Search issue, student, or building"
+						filters={[
+							{
+								name: 'status',
+								label: 'Request status',
+								value: status,
+								options: [
+									{ value: '', label: 'All statuses' },
+									{ value: 'OPEN', label: 'Open' },
+									{ value: 'IN_PROGRESS', label: 'In progress' },
+									{ value: 'DONE', label: 'Done' },
+								],
+							},
+						]}
+					/>
 				</CardHeader>
 				<CardContent className="p-0">
 					<Table>
@@ -416,13 +514,24 @@ export default async function MaintenancePage() {
 									<TableCell colSpan={4}>
 										<div className="data-empty">
 											<Wrench className="data-empty-icon" />
-											<p>No maintenance requests yet.</p>
+											<p>
+												{hasActiveFilters
+													? 'No maintenance requests match these filters.'
+													: 'No maintenance requests yet.'}
+											</p>
 										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
 						</TableBody>
 					</Table>
+					<ListPagination
+						basePath="/admin/maintenance"
+						{...pagination}
+						totalItems={totalItems}
+						params={{ q, status }}
+						itemLabel="requests"
+					/>
 				</CardContent>
 			</Card>
 		</div>

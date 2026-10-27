@@ -750,6 +750,39 @@ html[data-theme^='dark'] .page-subtitle {
 	color: #94a3b8;
 }
 
+html[data-theme^='dark'] .tahoe-shell [data-slot='badge'] {
+	--tw-ring-color: rgba(148, 163, 184, 0.32) !important;
+}
+
+html[data-theme^='dark'] .tahoe-shell [data-slot='badge'][data-variant='default'] {
+	background-color: rgba(148, 163, 184, 0.16) !important;
+	color: #cbd5e1 !important;
+}
+
+html[data-theme^='dark'] .tahoe-shell [data-slot='badge'][data-variant='success'] {
+	background-color: rgba(16, 185, 129, 0.16) !important;
+	color: #6ee7b7 !important;
+	--tw-ring-color: rgba(52, 211, 153, 0.34) !important;
+}
+
+html[data-theme^='dark'] .tahoe-shell [data-slot='badge'][data-variant='warning'] {
+	background-color: rgba(245, 158, 11, 0.16) !important;
+	color: #fcd34d !important;
+	--tw-ring-color: rgba(251, 191, 36, 0.34) !important;
+}
+
+html[data-theme^='dark'] .tahoe-shell [data-slot='badge'][data-variant='danger'] {
+	background-color: rgba(244, 63, 94, 0.16) !important;
+	color: #fda4af !important;
+	--tw-ring-color: rgba(251, 113, 133, 0.34) !important;
+}
+
+html[data-theme^='dark'] .tahoe-shell [data-slot='badge'][data-variant='info'] {
+	background-color: rgba(14, 165, 233, 0.16) !important;
+	color: #7dd3fc !important;
+	--tw-ring-color: rgba(56, 189, 248, 0.34) !important;
+}
+
 .section-label {
 	font-size: 0.6875rem;
 	font-weight: 700;

@@ -1,6 +1,7 @@
 import { GraduationCap, Plus, Users } from 'lucide-react';
 import Link from 'next/link';
 
+import type { Prisma } from '@/generated/prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +14,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+	ListFilters,
+	ListPagination,
+} from '@/components/ui/list-controls';
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -21,19 +26,42 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
+import {
+	getPageParam,
+	getSearchParam,
+	paginate,
+	type SearchParamsRecord,
+} from '@/lib/list';
 import { prisma } from '@/lib/prisma';
 
 import { createStudent as createStudentAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function StudentsPage() {
+export default async function StudentsPage({
+	searchParams,
+}: {
+	searchParams: Promise<SearchParamsRecord>;
+}) {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	const getStudents = () =>
+	const params = await searchParams;
+	const q = getSearchParam(params, 'q').trim();
+	const requestedPage = getPageParam(params);
+	const rawStatus = getSearchParam(params, 'status');
+	const status =
+		rawStatus === 'assigned' || rawStatus === 'unassigned' ? rawStatus : '';
+
+	const getStudents = (
+		where: Prisma.StudentWhereInput,
+		skip: number,
+		take: number,
+	) =>
 		prisma.student.findMany({
-			where: { user: { isActive: true } },
+			where,
 			orderBy: [{ studentNumber: 'asc' }],
+			skip,
+			take,
 			include: {
 				user: { select: { id: true, name: true, email: true } },
 				allocations: {
@@ -54,16 +82,61 @@ export default async function StudentsPage() {
 	type StudentsResult = Awaited<ReturnType<typeof getStudents>>;
 
 	let students: StudentsResult = [];
+	let totalStudents = 0;
+	let assigned = 0;
+	let totalItems = 0;
+	let page = requestedPage;
 	let dataError: string | null = null;
 
+	const baseWhere: Prisma.StudentWhereInput = { user: { isActive: true } };
+	const searchWhere: Prisma.StudentWhereInput | null = q
+		? {
+				OR: [
+					{ studentNumber: { contains: q, mode: 'insensitive' } },
+					{ program: { contains: q, mode: 'insensitive' } },
+					{ user: { name: { contains: q, mode: 'insensitive' } } },
+					{ user: { email: { contains: q, mode: 'insensitive' } } },
+				],
+			}
+		: null;
+	const assignmentWhere: Prisma.StudentWhereInput | null =
+		status === 'assigned'
+			? { allocations: { some: { endDate: null } } }
+			: status === 'unassigned'
+				? { allocations: { none: { endDate: null } } }
+				: null;
+	const listWhere: Prisma.StudentWhereInput = {
+		...baseWhere,
+		...(searchWhere ?? {}),
+		...(assignmentWhere ?? {}),
+	};
+
 	try {
-		students = await getStudents();
+		[totalStudents, assigned, totalItems] = await Promise.all([
+			prisma.student.count({ where: baseWhere }),
+			prisma.student.count({
+				where: {
+					...baseWhere,
+					allocations: { some: { endDate: null } },
+				},
+			}),
+			prisma.student.count({ where: listWhere }),
+		]);
+
+		const pagination = paginate(totalItems, requestedPage);
+		page = pagination.page;
+		students = await getStudents(
+			listWhere,
+			pagination.skip,
+			pagination.take,
+		);
 	} catch (error) {
 		console.error('[page] failed to load data', error);
 		dataError = 'Could not load data. Please try again.';
 	}
 
-	const assigned = students.filter((s) => s.allocations.length > 0).length;
+	const pagination = paginate(totalItems, page);
+	const hasActiveFilters = Boolean(q || status);
 
 	return (
 		<div className="space-y-6">
@@ -92,9 +165,7 @@ export default async function StudentsPage() {
 					</div>
 					<div>
 						<div className="text-xs text-slate-400">Total Students</div>
-						<div className="text-xl font-bold text-white">
-							{students.length}
-						</div>
+						<div className="text-xl font-bold text-white">{totalStudents}</div>
 					</div>
 				</div>
 				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3">
@@ -113,7 +184,7 @@ export default async function StudentsPage() {
 					<div>
 						<div className="text-xs text-slate-400">Unassigned</div>
 						<div className="text-xl font-bold text-white">
-							{students.length - assigned}
+							{totalStudents - assigned}
 						</div>
 					</div>
 				</div>
@@ -206,6 +277,23 @@ export default async function StudentsPage() {
 					<CardDescription>
 						Current assignment is derived from active allocations.
 					</CardDescription>
+					<ListFilters
+						action="/admin/students"
+						searchValue={q}
+						searchPlaceholder="Search name, email, number, or program"
+						filters={[
+							{
+								name: 'status',
+								label: 'Assignment status',
+								value: status,
+								options: [
+									{ value: '', label: 'All assignments' },
+									{ value: 'assigned', label: 'Assigned' },
+									{ value: 'unassigned', label: 'Unassigned' },
+								],
+							},
+						]}
+					/>
 				</CardHeader>
 				<CardContent className="p-0 px-0 pb-0">
 					<Table>
@@ -278,13 +366,24 @@ export default async function StudentsPage() {
 									<TableCell colSpan={5}>
 										<div className="data-empty">
 											<GraduationCap className="data-empty-icon" />
-											<p>No students yet. Add one above.</p>
+											<p>
+												{hasActiveFilters
+													? 'No students match these filters.'
+													: 'No students yet. Add one above.'}
+											</p>
 										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
 						</TableBody>
 					</Table>
+					<ListPagination
+						basePath="/admin/students"
+						{...pagination}
+						totalItems={totalItems}
+						params={{ q, status }}
+						itemLabel="students"
+					/>
 				</CardContent>
 			</Card>
 		</div>

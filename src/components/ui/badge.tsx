@@ -23,6 +23,8 @@ export function Badge({
 }: React.HTMLAttributes<HTMLSpanElement> & { variant?: BadgeVariant }) {
 	return (
 		<span
+			data-slot="badge"
+			data-variant={variant}
 			className={cn(
 				'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 transition-all duration-200 hover:-translate-y-px hover:ring-violet-300/40',
 				variants[variant],

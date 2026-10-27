@@ -1,3 +1,4 @@
+import type { Prisma } from '@/generated/prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,6 +11,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+	ListFilters,
+	ListPagination,
+} from '@/components/ui/list-controls';
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -18,6 +23,12 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
+import {
+	getPageParam,
+	getSearchParam,
+	paginate,
+	type SearchParamsRecord,
+} from '@/lib/list';
 import { prisma } from '@/lib/prisma';
 import { Activity, Calendar, ClipboardCheck } from 'lucide-react';
 
@@ -25,8 +36,26 @@ import { recordAttendance as recordAttendanceAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AttendancePage() {
+export default async function AttendancePage({
+	searchParams,
+}: {
+	searchParams: Promise<SearchParamsRecord>;
+}) {
 	await requireRole(['ADMIN', 'STAFF']);
+
+	const params = await searchParams;
+	const q = getSearchParam(params, 'q').trim();
+	const requestedPage = getPageParam(params);
+	const rawStatus = getSearchParam(params, 'status');
+	const status =
+		rawStatus === 'PRESENT' || rawStatus === 'ABSENT' ? rawStatus : '';
+	const dateParam = getSearchParam(params, 'date');
+	const attendanceDate =
+		/^\d{4}-\d{2}-\d{2}$/.test(dateParam) &&
+		!Number.isNaN(new Date(`${dateParam}T00:00:00.000Z`).getTime())
+			? new Date(`${dateParam}T00:00:00.000Z`)
+			: null;
+	const dateFilter = attendanceDate ? dateParam : '';
 
 	const getStudents = () =>
 		prisma.student.findMany({
@@ -34,10 +63,16 @@ export default async function AttendancePage() {
 			include: { user: { select: { id: true, name: true } } },
 		});
 
-	const getRecent = () =>
+	const getRecent = (
+		where: Prisma.AttendanceRecordWhereInput,
+		skip: number,
+		take: number,
+	) =>
 		prisma.attendanceRecord.findMany({
-			take: 25,
-			orderBy: { date: 'desc' },
+			where,
+			skip,
+			take,
+			orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
 			include: { student: { include: { user: { select: { name: true } } } } },
 		});
 
@@ -60,14 +95,45 @@ export default async function AttendancePage() {
 	let students: StudentsResult = [];
 	let recent: RecentResult = [];
 	let attendanceForRate: AttendanceForRateResult = [];
+	let totalItems = 0;
+	let page = requestedPage;
 	let dataError: string | null = null;
 
+	const searchWhere: Prisma.AttendanceRecordWhereInput | null = q
+		? {
+				student: {
+					OR: [
+						{ studentNumber: { contains: q, mode: 'insensitive' } },
+						{ user: { name: { contains: q, mode: 'insensitive' } } },
+					],
+				},
+			}
+		: null;
+	const listWhere: Prisma.AttendanceRecordWhereInput = {
+		...(searchWhere ?? {}),
+		...(status ? { status } : {}),
+		...(attendanceDate ? { date: attendanceDate } : {}),
+	};
+
 	try {
-		[students, recent, attendanceForRate] = await Promise.all([
-			getStudents(),
-			getRecent(),
-			getAttendanceForRate(thirtyDaysAgo),
-		]);
+		const [studentsResult, rateRecords, filteredCount] =
+			await Promise.all([
+				getStudents(),
+				getAttendanceForRate(thirtyDaysAgo),
+				prisma.attendanceRecord.count({ where: listWhere }),
+			]);
+
+		students = studentsResult;
+		attendanceForRate = rateRecords;
+		totalItems = filteredCount;
+
+		const pagination = paginate(totalItems, requestedPage);
+		page = pagination.page;
+		recent = await getRecent(
+			listWhere,
+			pagination.skip,
+			pagination.take,
+		);
 	} catch (error) {
 		console.error('[page] failed to load data', error);
 		dataError = 'Could not load data. Please try again.';
@@ -78,6 +144,9 @@ export default async function AttendancePage() {
 	).length;
 	const totalCount = attendanceForRate.length;
 	const rate = totalCount ? presentCount / totalCount : 0;
+
+	const pagination = paginate(totalItems, page);
+	const hasActiveFilters = Boolean(q || status || dateFilter);
 
 	const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -196,6 +265,29 @@ export default async function AttendancePage() {
 							<CardDescription>Recent attendance history feed</CardDescription>
 						</div>
 					</div>
+					<ListFilters
+						action="/admin/attendance"
+						searchValue={q}
+						searchPlaceholder="Search student name or number"
+						filters={[
+							{
+								name: 'status',
+								label: 'Attendance status',
+								value: status,
+								options: [
+									{ value: '', label: 'All statuses' },
+									{ value: 'PRESENT', label: 'Present' },
+									{ value: 'ABSENT', label: 'Absent' },
+								],
+							},
+							{
+								type: 'date',
+								name: 'date',
+								label: 'Attendance date',
+								value: dateFilter,
+							},
+						]}
+					/>
 				</CardHeader>
 				<CardContent className="p-0">
 					<Table>
@@ -244,13 +336,24 @@ export default async function AttendancePage() {
 									<TableCell colSpan={4}>
 										<div className="data-empty">
 											<Activity className="data-empty-icon" />
-											<p>No records found. Start marking presence above.</p>
+											<p>
+												{hasActiveFilters
+													? 'No attendance records match these filters.'
+													: 'No records found. Start marking presence above.'}
+											</p>
 										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
 						</TableBody>
 					</Table>
+					<ListPagination
+						basePath="/admin/attendance"
+						{...pagination}
+						totalItems={totalItems}
+						params={{ q, status, date: dateFilter }}
+						itemLabel="records"
+					/>
 				</CardContent>
 			</Card>
 		</div>

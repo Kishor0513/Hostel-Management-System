@@ -1,6 +1,7 @@
 import { BedDouble, Building2, Plus } from 'lucide-react';
 import Link from 'next/link';
 
+import type { Prisma } from '@/generated/prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +14,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+	ListFilters,
+	ListPagination,
+} from '@/components/ui/list-controls';
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -21,17 +26,43 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
+import {
+	getPageParam,
+	getSearchParam,
+	paginate,
+	type SearchParamsRecord,
+} from '@/lib/list';
 import { prisma } from '@/lib/prisma';
 import { createRoom as createRoomAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function RoomsPage() {
+export default async function RoomsPage({
+	searchParams,
+}: {
+	searchParams: Promise<SearchParamsRecord>;
+}) {
 	await requireRole(['ADMIN', 'STAFF']);
 
-	const getRooms = () =>
+	const params = await searchParams;
+	const q = getSearchParam(params, 'q').trim();
+	const requestedPage = getPageParam(params);
+	const rawAvailability = getSearchParam(params, 'availability');
+	const availability =
+		rawAvailability === 'available' || rawAvailability === 'full'
+			? rawAvailability
+			: '';
+
+	const getRooms = (
+		where: Prisma.RoomWhereInput,
+		skip: number,
+		take: number,
+	) =>
 		prisma.room.findMany({
+			where,
 			orderBy: [{ building: 'asc' }, { floor: 'asc' }, { roomNumber: 'asc' }],
+			skip,
+			take,
 			include: {
 				beds: {
 					include: {
@@ -48,21 +79,58 @@ export default async function RoomsPage() {
 	type BedItem = RoomsResult[number]['beds'][number];
 
 	let rooms: RoomsResult = [];
+	let totalRooms = 0;
+	let totalBeds = 0;
+	let occupiedBeds = 0;
+	let totalItems = 0;
+	let page = requestedPage;
 	let dataError: string | null = null;
 
+	const searchWhere: Prisma.RoomWhereInput | null = q
+		? {
+				OR: [
+					{ building: { contains: q, mode: 'insensitive' } },
+					{ roomNumber: { contains: q, mode: 'insensitive' } },
+				],
+			}
+		: null;
+	const availabilityWhere: Prisma.RoomWhereInput | null =
+		availability === 'available'
+			? { beds: { some: { allocations: { none: { endDate: null } } } } }
+			: availability === 'full'
+				? { beds: { none: { allocations: { none: { endDate: null } } } } }
+				: null;
+	const listWhere: Prisma.RoomWhereInput = {
+		...(searchWhere ?? {}),
+		...(availabilityWhere ?? {}),
+	};
+
 	try {
-		rooms = await getRooms();
+		const [totalRoomCount, totalBedCount, occupiedBedCount, filteredCount] =
+			await Promise.all([
+				prisma.room.count(),
+				prisma.bed.count(),
+				prisma.bed.count({
+					where: { allocations: { some: { endDate: null } } },
+				}),
+				prisma.room.count({ where: listWhere }),
+			]);
+
+		totalRooms = totalRoomCount;
+		totalBeds = totalBedCount;
+		occupiedBeds = occupiedBedCount;
+		totalItems = filteredCount;
+
+		const pagination = paginate(totalItems, requestedPage);
+		page = pagination.page;
+		rooms = await getRooms(listWhere, pagination.skip, pagination.take);
 	} catch (error) {
 		console.error('[page] failed to load data', error);
 		dataError = 'Could not load data. Please try again.';
 	}
 
-	const totalBeds = rooms.reduce((sum, r) => sum + r.beds.length, 0);
-	const occupiedBeds = rooms.reduce(
-		(sum, r) =>
-			sum + r.beds.filter((b: BedItem) => b.allocations.length > 0).length,
-		0,
-	);
+	const pagination = paginate(totalItems, page);
+	const hasActiveFilters = Boolean(q || availability);
 
 	return (
 		<div className="space-y-6">
@@ -91,7 +159,7 @@ export default async function RoomsPage() {
 					</div>
 					<div>
 						<div className="text-xs text-slate-400">Total Rooms</div>
-						<div className="text-xl font-bold text-white">{rooms.length}</div>
+						<div className="text-xl font-bold text-white">{totalRooms}</div>
 					</div>
 				</div>
 				<div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 flex items-center gap-3">
@@ -190,6 +258,23 @@ export default async function RoomsPage() {
 					<CardDescription>
 						Availability is computed from active allocations.
 					</CardDescription>
+					<ListFilters
+						action="/admin/rooms"
+						searchValue={q}
+						searchPlaceholder="Search building or room number"
+						filters={[
+							{
+								name: 'availability',
+								label: 'Bed availability',
+								value: availability,
+								options: [
+									{ value: '', label: 'All rooms' },
+									{ value: 'available', label: 'Beds available' },
+									{ value: 'full', label: 'Fully occupied' },
+								],
+							},
+						]}
+					/>
 				</CardHeader>
 				<CardContent className="p-0 pb-0 px-0">
 					<Table>
@@ -243,13 +328,24 @@ export default async function RoomsPage() {
 									<TableCell colSpan={5}>
 										<div className="data-empty">
 											<BedDouble className="data-empty-icon" />
-											<p>No rooms yet. Add one above.</p>
+											<p>
+												{hasActiveFilters
+													? 'No rooms match these filters.'
+													: 'No rooms yet. Add one above.'}
+											</p>
 										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
 						</TableBody>
 					</Table>
+					<ListPagination
+						basePath="/admin/rooms"
+						{...pagination}
+						totalItems={totalItems}
+						params={{ q, availability }}
+						itemLabel="rooms"
+					/>
 				</CardContent>
 			</Card>
 		</div>

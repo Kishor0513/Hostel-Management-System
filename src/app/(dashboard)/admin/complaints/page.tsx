@@ -1,3 +1,4 @@
+import type { Prisma } from '@/generated/prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,6 +11,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+	ListFilters,
+	ListPagination,
+} from '@/components/ui/list-controls';
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -18,6 +23,12 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { requireRole } from '@/lib/auth';
+import {
+	getPageParam,
+	getSearchParam,
+	paginate,
+	type SearchParamsRecord,
+} from '@/lib/list';
 import { prisma } from '@/lib/prisma';
 import { MessageSquare, Plus } from 'lucide-react';
 
@@ -25,8 +36,23 @@ import { createComplaintTicket, updateComplaintStatus } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ComplaintsPage() {
+export default async function ComplaintsPage({
+	searchParams,
+}: {
+	searchParams: Promise<SearchParamsRecord>;
+}) {
 	await requireRole(['ADMIN', 'STAFF']);
+
+	const params = await searchParams;
+	const q = getSearchParam(params, 'q').trim();
+	const requestedPage = getPageParam(params);
+	const rawStatus = getSearchParam(params, 'status');
+	const status =
+		rawStatus === 'OPEN' ||
+		rawStatus === 'IN_PROGRESS' ||
+		rawStatus === 'RESOLVED'
+			? rawStatus
+			: '';
 
 	const getStaff = () =>
 		prisma.staff.findMany({
@@ -48,10 +74,16 @@ export default async function ComplaintsPage() {
 			select: { id: true, building: true, floor: true, roomNumber: true },
 		});
 
-	const getTickets = () =>
+	const getTickets = (
+		where: Prisma.ComplaintTicketWhereInput,
+		skip: number,
+		take: number,
+	) =>
 		prisma.complaintTicket.findMany({
+			where,
 			orderBy: { createdAt: 'desc' },
-			take: 20,
+			skip,
+			take,
 			include: {
 				student: { include: { user: { select: { name: true } } } },
 				room: { select: { building: true, floor: true, roomNumber: true } },
@@ -69,23 +101,73 @@ export default async function ComplaintsPage() {
 	let students: StudentsResult = [];
 	let rooms: RoomsResult = [];
 	let tickets: TicketsResult = [];
+	let open = 0;
+	let inProgress = 0;
+	let resolved = 0;
+	let totalItems = 0;
+	let page = requestedPage;
 	let dataError: string | null = null;
 
+	const searchWhere: Prisma.ComplaintTicketWhereInput | null = q
+		? {
+				OR: [
+					{ subject: { contains: q, mode: 'insensitive' } },
+					{ description: { contains: q, mode: 'insensitive' } },
+					{ student: { user: { name: { contains: q, mode: 'insensitive' } } } },
+					{
+						room: {
+							building: { contains: q, mode: 'insensitive' },
+						},
+					},
+				],
+			}
+		: null;
+	const listWhere: Prisma.ComplaintTicketWhereInput = {
+		...(searchWhere ?? {}),
+		...(status ? { status } : {}),
+	};
+
 	try {
-		[staff, students, rooms, tickets] = await Promise.all([
+		const [
+			staffResult,
+			studentsResult,
+			roomsResult,
+			openCount,
+			inProgressCount,
+			resolvedCount,
+			filteredCount,
+		] = await Promise.all([
 			getStaff(),
 			getStudents(),
 			getRooms(),
-			getTickets(),
+			prisma.complaintTicket.count({ where: { status: 'OPEN' } }),
+			prisma.complaintTicket.count({ where: { status: 'IN_PROGRESS' } }),
+			prisma.complaintTicket.count({ where: { status: 'RESOLVED' } }),
+			prisma.complaintTicket.count({ where: listWhere }),
 		]);
+
+		staff = staffResult;
+		students = studentsResult;
+		rooms = roomsResult;
+		open = openCount;
+		inProgress = inProgressCount;
+		resolved = resolvedCount;
+		totalItems = filteredCount;
+
+		const pagination = paginate(totalItems, requestedPage);
+		page = pagination.page;
+		tickets = await getTickets(
+			listWhere,
+			pagination.skip,
+			pagination.take,
+		);
 	} catch (error) {
 		console.error('[page] failed to load data', error);
 		dataError = 'Could not load data. Please try again.';
 	}
 
-	const open = tickets.filter((t) => t.status === 'OPEN').length;
-	const inProgress = tickets.filter((t) => t.status === 'IN_PROGRESS').length;
-	const resolved = tickets.filter((t) => t.status === 'RESOLVED').length;
+	const pagination = paginate(totalItems, page);
+	const hasActiveFilters = Boolean(q || status);
 
 	return (
 		<div className="space-y-6">
@@ -237,6 +319,24 @@ export default async function ComplaintsPage() {
 					<CardDescription>
 						Status updates are logged for audit trail.
 					</CardDescription>
+					<ListFilters
+						action="/admin/complaints"
+						searchValue={q}
+						searchPlaceholder="Search subject, description, student, or building"
+						filters={[
+							{
+								name: 'status',
+								label: 'Ticket status',
+								value: status,
+								options: [
+									{ value: '', label: 'All statuses' },
+									{ value: 'OPEN', label: 'Open' },
+									{ value: 'IN_PROGRESS', label: 'In progress' },
+									{ value: 'RESOLVED', label: 'Resolved' },
+								],
+							},
+						]}
+					/>
 				</CardHeader>
 				<CardContent>
 					<Table>
@@ -359,12 +459,21 @@ export default async function ComplaintsPage() {
 										colSpan={4}
 										className="text-white/60"
 									>
-										No tickets yet.
+										{hasActiveFilters
+											? 'No tickets match these filters.'
+											: 'No tickets yet.'}
 									</TableCell>
 								</TableRow>
 							) : null}
 						</TableBody>
 					</Table>
+					<ListPagination
+						basePath="/admin/complaints"
+						{...pagination}
+						totalItems={totalItems}
+						params={{ q, status }}
+						itemLabel="tickets"
+					/>
 				</CardContent>
 			</Card>
 		</div>

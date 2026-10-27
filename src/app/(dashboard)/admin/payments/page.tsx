@@ -1,3 +1,4 @@
+import type { Prisma } from '@/generated/prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,6 +11,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+	ListFilters,
+	ListPagination,
+} from '@/components/ui/list-controls';
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -20,6 +25,12 @@ import {
 import { requireRole } from '@/lib/auth';
 import { formatMoney } from '@/lib/format';
 import { resolveInvoiceStatus } from '@/lib/invoices';
+import {
+	getPageParam,
+	getSearchParam,
+	paginate,
+	type SearchParamsRecord,
+} from '@/lib/list';
 import { prisma } from '@/lib/prisma';
 import { getOrganizationSettings } from '@/lib/settings';
 import { Banknote, Receipt, UserPlus } from 'lucide-react';
@@ -31,8 +42,21 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default async function PaymentsPage() {
+export default async function PaymentsPage({
+	searchParams,
+}: {
+	searchParams: Promise<SearchParamsRecord>;
+}) {
 	await requireRole(['ADMIN', 'STAFF']);
+
+	const params = await searchParams;
+	const q = getSearchParam(params, 'q').trim();
+	const requestedPage = getPageParam(params);
+	const rawStatus = getSearchParam(params, 'status');
+	const status =
+		rawStatus === 'paid' || rawStatus === 'overdue' || rawStatus === 'pending'
+			? rawStatus
+			: '';
 
 	const settings = await getOrganizationSettings();
 	const defaultDueDate = new Date();
@@ -48,10 +72,16 @@ export default async function PaymentsPage() {
 			include: { user: { select: { name: true } } },
 		});
 
-	const getInvoices = () =>
+	const getInvoices = (
+		where: Prisma.InvoiceWhereInput,
+		skip: number,
+		take: number,
+	) =>
 		prisma.invoice.findMany({
+			where,
 			orderBy: { dueDate: 'desc' },
-			take: 15,
+			skip,
+			take,
 			include: {
 				student: {
 					include: { user: { select: { name: true, email: true } } },
@@ -67,10 +97,79 @@ export default async function PaymentsPage() {
 
 	let students: StudentsResult = [];
 	let invoices: InvoicesResult = [];
+	let totalOutstanding = 0;
+	let totalInvoices = 0;
+	let totalItems = 0;
+	let totalStudents = 0;
+	let page = requestedPage;
 	let dataError: string | null = null;
 
+	const today = new Date();
+	const startOfToday = new Date(
+		Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
+	);
+	const searchWhere: Prisma.InvoiceWhereInput | null = q
+		? {
+				student: {
+					OR: [
+						{ studentNumber: { contains: q, mode: 'insensitive' } },
+						{ user: { name: { contains: q, mode: 'insensitive' } } },
+						{ user: { email: { contains: q, mode: 'insensitive' } } },
+					],
+				},
+			}
+		: null;
+	const statusWhere: Prisma.InvoiceWhereInput | null =
+		status === 'paid'
+			? { status: 'PAID' }
+			: status === 'overdue'
+				? {
+						AND: [
+							{ status: { not: 'PAID' } },
+							{
+								OR: [
+									{ status: 'OVERDUE' },
+									{ dueDate: { lt: startOfToday } },
+								],
+							},
+						],
+					}
+				: status === 'pending'
+					? { status: 'PENDING', dueDate: { gte: startOfToday } }
+					: null;
+	const listWhere: Prisma.InvoiceWhereInput = {
+		...(searchWhere ?? {}),
+		...(statusWhere ?? {}),
+	};
+
 	try {
-		[students, invoices] = await Promise.all([getStudents(), getInvoices()]);
+		const [studentsResult, invoiceTotals, paymentTotals, invoiceCount, studentCount, filteredCount] =
+			await Promise.all([
+				getStudents(),
+				prisma.invoice.aggregate({ _sum: { amountDue: true } }),
+				prisma.payment.aggregate({ _sum: { amountPaid: true } }),
+				prisma.invoice.count(),
+				prisma.student.count({ where: { user: { isActive: true } } }),
+				prisma.invoice.count({ where: listWhere }),
+			]);
+
+		students = studentsResult;
+		totalOutstanding = Math.max(
+			0,
+			Number(invoiceTotals._sum.amountDue ?? 0) -
+				Number(paymentTotals._sum.amountPaid ?? 0),
+		);
+		totalInvoices = invoiceCount;
+		totalStudents = studentCount;
+		totalItems = filteredCount;
+
+		const pagination = paginate(totalItems, requestedPage);
+		page = pagination.page;
+		invoices = await getInvoices(
+			listWhere,
+			pagination.skip,
+			pagination.take,
+		);
 	} catch (error) {
 		console.error('[page] failed to load data', error);
 		dataError = 'Could not load data. Please try again.';
@@ -87,10 +186,8 @@ export default async function PaymentsPage() {
 		};
 	});
 
-	const totalOutstanding = invoicesComputed.reduce(
-		(sum, i) => sum + i.outstanding,
-		0,
-	);
+	const pagination = paginate(totalItems, page);
+	const hasActiveFilters = Boolean(q || status);
 
 	return (
 		<div className="space-y-6">
@@ -138,7 +235,7 @@ export default async function PaymentsPage() {
 					<div>
 						<div className="text-xs text-slate-400 font-medium">Invoices</div>
 						<div className="text-xl font-bold text-white">
-							{invoices.length}
+							{totalInvoices}
 						</div>
 					</div>
 				</div>
@@ -149,7 +246,7 @@ export default async function PaymentsPage() {
 					<div>
 						<div className="text-xs text-slate-400 font-medium">Students</div>
 						<div className="text-xl font-bold text-white">
-							{students.length}
+							{totalStudents}
 						</div>
 					</div>
 				</div>
@@ -249,6 +346,24 @@ export default async function PaymentsPage() {
 				<CardHeader>
 					<CardTitle>Invoice List</CardTitle>
 					<CardDescription>List of all invoices</CardDescription>
+					<ListFilters
+						action="/admin/payments"
+						searchValue={q}
+						searchPlaceholder="Search student, email, or student number"
+						filters={[
+							{
+								name: 'status',
+								label: 'Invoice status',
+								value: status,
+								options: [
+									{ value: '', label: 'All statuses' },
+									{ value: 'pending', label: 'Pending' },
+									{ value: 'overdue', label: 'Overdue' },
+									{ value: 'paid', label: 'Paid' },
+								],
+							},
+						]}
+					/>
 				</CardHeader>
 				<CardContent className="p-0 px-0 pb-0">
 					<Table>
@@ -349,13 +464,24 @@ export default async function PaymentsPage() {
 									<TableCell colSpan={6}>
 										<div className="data-empty">
 											<Receipt className="data-empty-icon" />
-											<p>No invoices found. Create one above.</p>
+											<p>
+												{hasActiveFilters
+													? 'No invoices match these filters.'
+													: 'No invoices found. Create one above.'}
+											</p>
 										</div>
 									</TableCell>
 								</TableRow>
 							) : null}
 						</TableBody>
 					</Table>
+					<ListPagination
+						basePath="/admin/payments"
+						{...pagination}
+						totalItems={totalItems}
+						params={{ q, status }}
+						itemLabel="invoices"
+					/>
 				</CardContent>
 			</Card>
 		</div>
