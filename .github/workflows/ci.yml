@@ -80,11 +80,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Validate compose file
-        env:
-          POSTGRES_PASSWORD: ci-only-db-password
-        run: docker compose config --quiet
-
       - name: Smoke test
         run: |
           npm start > /tmp/app.log 2>&1 &
@@ -104,16 +99,3 @@ jobs:
           fi
 
           npm run smoke
-
-  docker:
-    name: Docker image
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: verify
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build production image
-        run: docker build --target runner -t hms:ci .

@@ -29,7 +29,7 @@ A full-stack hostel operations application built with Next.js, Prisma, and Postg
 - **Auditability**: Login attempts, logins, account changes, settings changes, and all administrative writes are recorded in `AuditLog`.
 - **Integrity guards**: Duplicate invoice periods, overpayments, room capacity reductions, allocation conflicts, and destructive deletes are validated server-side.
 - **Soft deactivation**: Students and staff are deactivated rather than deleted, preserving invoices, attendance, and audit history.
-- **Production plumbing**: Environment validation, rate limiting, security headers, health checks, PostgreSQL migrations, Docker multi-stage builds, Docker Compose, and GitHub Actions CI with a database-backed smoke test.
+- **Production plumbing**: Environment validation, rate limiting, security headers, health checks, PostgreSQL migrations, and GitHub Actions CI with a database-backed smoke test.
 - **UI**: Responsive dashboards, charts, light/violet-dark themes, and accessible shared components.
 
 ## Tech Stack
@@ -45,10 +45,9 @@ A full-stack hostel operations application built with Next.js, Prisma, and Postg
 
 ## Requirements
 
-- Node.js `^20.19`, `^22.12`, or `>=24` (CI and Docker use Node 22)
+- Node.js `^20.19`, `^22.12`, or `>=24` (CI uses Node 22)
 - npm 10+
-- PostgreSQL 15+ for local development
-- Docker and Docker Compose for the containerized path (optional)
+- PostgreSQL 15+ for local development or a managed PostgreSQL instance
 
 ## Local Development
 
@@ -92,10 +91,6 @@ For schema changes during development, use `npm run db:migrate` and commit the g
 | `DATABASE_URL`      | Yes      | PostgreSQL connection string.                                           |
 | `NEXTAUTH_SECRET`   | Yes      | Signs session JWTs. Use at least 32 random bytes.                       |
 | `NEXTAUTH_URL`      | Yes      | Public application origin, for example `https://hms.example.com`.       |
-| `POSTGRES_USER`     | Compose  | Database user created by Docker Compose.                                |
-| `POSTGRES_PASSWORD` | Compose  | Database password created by Docker Compose. Use a strong value.        |
-| `POSTGRES_DB`       | Compose  | Database name created by Docker Compose.                                |
-| `APP_PORT`          | No       | Host port for the app container. Defaults to `3000`.                    |
 | `APP_URL`           | No       | Base URL used by the smoke test. Defaults to `http://localhost:3000`.   |
 
 Environment variables are validated at server startup by `src/lib/env.ts`. The application fails fast if a required value is missing or malformed.
@@ -129,27 +124,28 @@ Change or remove demo accounts before exposing a deployment. The seed also creat
 | `npm run db:studio`   | Open Prisma Studio.                                    |
 | `npm run smoke`       | Run HTTP smoke tests against a running instance.       |
 
-## Docker Compose
+## Production Build and Start
 
-The Compose stack runs PostgreSQL, applies migrations, and starts the production image.
+The application runs directly on Node.js against PostgreSQL; no container runtime is required.
 
 ```bash
 cp .env.example .env
-# Set NEXTAUTH_SECRET, NEXTAUTH_URL, and a URL-safe POSTGRES_PASSWORD in .env
+# Set DATABASE_URL, NEXTAUTH_SECRET, and NEXTAUTH_URL in .env
 
-docker compose build
-docker compose up -d db migrate app
-docker compose ps
+npm ci
+npm run db:deploy
+npm run build
+npm start
 curl -fsS http://localhost:3000/api/health
 ```
 
-Optional demo data:
+Optional demo data is for development only:
 
 ```bash
-docker compose --profile seed run --rm seed
+npm run db:seed
 ```
 
-The `seed` service deletes existing application data before inserting demo records. Do not run it against production. For production, create the first administrator with `npm run db:create-admin` instead.
+The seed deletes existing application data before inserting demo records. Never run it against production. Create the first production administrator with `npm run db:create-admin` instead.
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for admin bootstrap, managed Postgres, TLS, backups, migration procedure, and the production checklist.
 
@@ -184,7 +180,7 @@ Add a Content-Security-Policy at your reverse proxy or CDN after testing your as
 
 ## CI
 
-`.github/workflows/ci.yml` starts PostgreSQL, installs with `npm ci`, runs the dependency audit, Prisma generate, lint, typecheck, migrations, seed, admin-bootstrap verification, build, Compose validation, and a standalone-server smoke test that verifies:
+`.github/workflows/ci.yml` starts PostgreSQL, installs with `npm ci`, runs the dependency audit, Prisma generate, lint, typecheck, migrations, seed, admin-bootstrap verification, build, and a standalone-server smoke test that verifies:
 
 - the health endpoint and database connectivity,
 - unauthenticated `/admin` redirects to `/login`,
@@ -192,8 +188,6 @@ Add a Content-Security-Policy at your reverse proxy or CDN after testing your as
 - staff login and admin-only route isolation,
 - student portal access and role isolation,
 - deactivated accounts are rejected.
-
-A second job builds the production Docker image.
 
 ## Project Structure
 
