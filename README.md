@@ -47,40 +47,28 @@ A full-stack hostel operations application built with Next.js, Prisma, and Postg
 
 - Node.js `^20.19`, `^22.12`, or `>=24` (CI uses Node 22)
 - npm 10+
-- PostgreSQL 15+ for local development or a managed PostgreSQL instance
+- PostgreSQL 15+ is optional for local development; `npm run dev` provisions an embedded instance automatically. Production and external-database development require PostgreSQL.
 
 ## Local Development
 
-1. Install dependencies:
+```bash
+npm install
+npm run dev
+```
 
-   ```bash
-   npm install
-   ```
+On first run, `npm run dev`:
 
-2. Create the environment file and set a real secret:
+- creates `.env` with a local database URL and generated `NEXTAUTH_SECRET` when missing,
+- starts embedded PostgreSQL with persistent data in `.local/postgres`,
+- generates the Prisma client and applies migrations,
+- seeds demo data when the database has no users,
+- starts Next.js at `http://localhost:3000`.
 
-   ```bash
-   cp .env.example .env
-   openssl rand -base64 48
-   ```
+Open `http://localhost:3000` and sign in with one of the demo accounts below. Stop the server with `Ctrl+C`; PostgreSQL stops with it.
 
-   Put the generated value in `NEXTAUTH_SECRET`. Point `DATABASE_URL` at your local PostgreSQL database.
+To reset local demo data, stop the server and delete `.local/postgres`, then run `npm run dev` again.
 
-3. Apply migrations, generate the client, and seed demo data:
-
-   ```bash
-   npm run db:generate
-   npm run db:deploy
-   npm run db:seed
-   ```
-
-4. Start the development server:
-
-   ```bash
-   npm run dev
-   ```
-
-5. Open `http://localhost:3000`. Unauthenticated requests are redirected to `/login`.
+To use an external PostgreSQL database instead, copy `.env.example` to `.env`, set `DATABASE_URL` and `NEXTAUTH_SECRET`, then run `npm run dev`. Migrations are applied automatically, but demo data is not seeded into external databases. Use `npm run db:create-admin` for a real first administrator, or run the destructive `npm run db:seed` only when you intentionally want demo data.
 
 For schema changes during development, use `npm run db:migrate` and commit the generated migration. Never use `prisma db push` against a production database.
 
@@ -93,25 +81,39 @@ For schema changes during development, use `npm run db:migrate` and commit the g
 | `NEXTAUTH_URL`      | Yes      | Public application origin, for example `https://hms.example.com`.       |
 | `APP_URL`           | No       | Base URL used by the smoke test. Defaults to `http://localhost:3000`.   |
 
-Environment variables are validated at server startup by `src/lib/env.ts`. The application fails fast if a required value is missing or malformed.
+Environment variables are validated at server startup by `src/lib/env.ts`. The development command generates missing local values; production deployments must provide all required values explicitly.
 
 ## Demo Credentials
 
-Seed data is for development only. These accounts exist after `npm run db:seed`:
+Seed data is for development only. These accounts exist after the first `npm run dev` or an explicit `npm run db:seed`.
 
-| Role    | Email                 | Password     |
-| ------- | --------------------- | ------------ |
-| Admin   | `admin@hostel.local`  | `admin123`   |
-| Warden  | `warden@hostel.local` | `staff123`   |
-| Student | `suman@student.local` | `student123` |
+| Role    | Name               | Email                    | Password     |
+| ------- | ------------------ | ------------------------ | ------------ |
+| ADMIN   | System Admin       | `admin@hostel.local`     | `admin123`   |
+| STAFF   | Mr. Ramesh Sharma  | `warden@hostel.local`    | `staff123`   |
+| STAFF   | John Miller        | `tech@hostel.local`      | `staff123`   |
+| STUDENT | Suman Kumar        | `suman@student.local`    | `student123` |
+| STUDENT | Priya Raj          | `priya@student.local`    | `student123` |
+| STUDENT | Amit Singh         | `amit@student.local`     | `student123` |
+| STUDENT | Sneha Kapur        | `sneha@student.local`    | `student123` |
+| STUDENT | Rohit Verma        | `rohit@student.local`    | `student123` |
+| STUDENT | Ananya Das         | `ananya@student.local`   | `student123` |
+| STUDENT | Vikram Rathore     | `vikram@student.local`   | `student123` |
+| STUDENT | Ishaan Mehta       | `ishaan@student.local`   | `student123` |
+| STUDENT | Kavya Iyer         | `kavya@student.local`    | `student123` |
+| STUDENT | Rahul Dravid       | `rahul@student.local`    | `student123` |
+| STUDENT | Sara Ali           | `sara@student.local`     | `student123` |
+| STUDENT | Arjun Reddy        | `arjun@student.local`    | `student123` |
+| STUDENT | Inactive Student   | `inactive@student.local` | `student123` |
 
-Change or remove demo accounts before exposing a deployment. The seed also creates `inactive@student.local`, a deactivated account used by the smoke test to verify that suspended users cannot sign in. Never run the seed profile against production data.
+`inactive@student.local` is intentionally deactivated and cannot sign in; it is used by the smoke test to verify suspended-account handling. Change or remove all demo accounts before exposing a deployment. Never run the seed against production data.
 
 ## Scripts
 
 | Script              | Description                                              |
 | ------------------- | -------------------------------------------------------- |
-| `npm run dev`       | Start the Next.js development server.                    |
+| `npm run dev`       | Prepare local PostgreSQL/migrations/seed data and start Next.js. |
+| `npm run dev:next`  | Start Next.js without local database setup.              |
 | `npm run build`     | Build the production bundle.                             |
 | `npm run start`     | Start the standalone production server after a build.    |
 | `npm run lint`      | Run ESLint.                                             |

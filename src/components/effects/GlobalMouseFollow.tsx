@@ -60,27 +60,39 @@ function markTargets(root: ParentNode) {
 
 export default function GlobalMouseFollow() {
 	useEffect(() => {
-		markTargets(document);
+		let observer: MutationObserver | null = null;
+		let activated = false;
 
-		const observer = new MutationObserver((mutations) => {
-			for (const mutation of mutations) {
-				for (const node of mutation.addedNodes) {
-					if (!(node instanceof HTMLElement)) {
-						continue;
-					}
-
-					if (node.matches(TARGET_SELECTOR) && !shouldSkip(node)) {
-						node.classList.add('theme-mouse-follow');
-					}
-
-					markTargets(node);
-				}
+		const activate = () => {
+			if (activated) {
+				return;
 			}
-		});
 
-		observer.observe(document.body, { childList: true, subtree: true });
+			activated = true;
+			markTargets(document);
+
+			observer = new MutationObserver((mutations) => {
+				for (const mutation of mutations) {
+					for (const node of mutation.addedNodes) {
+						if (!(node instanceof HTMLElement)) {
+							continue;
+						}
+
+						if (node.matches(TARGET_SELECTOR) && !shouldSkip(node)) {
+							node.classList.add('theme-mouse-follow');
+						}
+
+						markTargets(node);
+					}
+				}
+			});
+
+			observer.observe(document.body, { childList: true, subtree: true });
+		};
 
 		const onPointerMove = (event: PointerEvent) => {
+			activate();
+
 			const target = event.target as HTMLElement | null;
 			if (!target) {
 				return;
@@ -122,7 +134,7 @@ export default function GlobalMouseFollow() {
 		document.addEventListener('pointerout', onPointerOut, { passive: true });
 
 		return () => {
-			observer.disconnect();
+			observer?.disconnect();
 			document.removeEventListener('pointermove', onPointerMove);
 			document.removeEventListener('pointerout', onPointerOut);
 		};
